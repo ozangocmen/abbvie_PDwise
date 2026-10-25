@@ -1,0 +1,713 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PDwise Clinical</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fixed left rail (nav + hasta seçici) · sticky top bar · scrollable clinical workspace; all cards flat, one accent reserved for actions */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#EDF0F4; --line:#D7DDE5; --line-strong:#B9C2CE;
+  --fg:#17212B; --fg-2:#4A5666; --muted:#73808F;
+  --accent:#2E5A86; --accent-fg:#FFFFFF; --accent-soft:#E3ECF6;
+  --good:#1F7A4D; --good-soft:#E1F3E8; --warn:#9A6B12; --warn-soft:#FBF0D5; --serious:#B4471B; --serious-soft:#FCE6DA; --critical:#A3261F;
+  --aw:#2F6DB5; --pkg:#C2662A; --stat:#1F8F7A;
+  --m0:#F0E6D6; --m1:#E6C9A0; --m2:#D9A66A; --m3:#C27F3C; --m4:#935725; /* motor yük ramp: açık→koyu */
+  --shadow:0 1px 2px rgba(23,33,43,.06);
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F151C; --surface:#161E27; --surface-2:#1E2833; --line:#2A3542; --line-strong:#3B4857;
+  --fg:#E7ECF1; --fg-2:#B5C0CC; --muted:#8793A0;
+  --accent:#7FA8D6; --accent-fg:#0F151C; --accent-soft:#1F2F42;
+  --good:#5CC48E; --good-soft:#163426; --warn:#E0B04A; --warn-soft:#3A2E12; --serious:#F08A5A; --serious-soft:#3F2416; --critical:#F27C74;
+  --aw:#5A8FD8; --pkg:#C97638; --stat:#2FA488;
+  --m0:#2A2A2A; --m1:#4A3A2A; --m2:#7A5530; --m3:#B07234; --m4:#E0A05A;
+  --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --surface:#161E27; --surface-2:#1E2833; --line:#2A3542; --line-strong:#3B4857;
+  --fg:#E7ECF1; --fg-2:#B5C0CC; --muted:#8793A0;
+  --accent:#7FA8D6; --accent-fg:#0F151C; --accent-soft:#1F2F42;
+  --good:#5CC48E; --good-soft:#163426; --warn:#E0B04A; --warn-soft:#3A2E12; --serious:#F08A5A; --serious-soft:#3F2416; --critical:#F27C74;
+  --aw:#5A8FD8; --pkg:#C97638; --stat:#2FA488;
+  --m0:#2A2A2A; --m1:#4A3A2A; --m2:#7A5530; --m3:#B07234; --m4:#E0A05A;
+  --shadow:none; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--text);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:22px;font-weight:700}
+h2{font-size:17px;font-weight:600}
+h3{font-size:14px;font-weight:600}
+p{margin:0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+a{color:var(--accent)}
+
+/* shell */
+.app{display:grid;grid-template-columns:248px 1fr;height:100%}
+.rail{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding-block:14px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:12px;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 6px 14px}
+.brand-mark{width:30px;height:30px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:var(--accent-fg);font-family:var(--display);font-weight:700;font-size:13px}
+.brand b{font-family:var(--display);font-size:16px;display:block;line-height:1.1}
+.brand span{font-size:11px;color:var(--muted)}
+.rail nav{display:flex;flex-direction:column;gap:2px}
+.rail nav .grp{margin:12px 6px 4px}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:7px 8px;border-radius:7px;color:var(--fg-2);cursor:pointer;font-weight:500}
+.nav-btn:hover{background:var(--surface-2)}
+.nav-btn[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav-btn .k{margin-left:auto;font-size:11px;background:var(--serious);color:#fff;border-radius:10px;padding:0 6px;font-family:var(--mono)}
+.nav-ic{width:16px;height:16px;flex:none;opacity:.8}
+.rail-foot{margin-top:auto;padding:12px 6px 0;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.rail-foot b{display:block;color:var(--fg);font-weight:600}
+
+.main{display:flex;flex-direction:column;min-width:0;height:100%}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topbar .sp{flex:1}
+.pt-select{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:5px 8px 5px 10px}
+.pt-select select{border:0;background:transparent;font-weight:600;cursor:pointer;max-width:260px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:5px 11px;cursor:pointer;color:var(--fg-2);font-weight:500}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.demo-tag{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:3px 8px}
+.menu-btn{display:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;width:36px;height:34px;cursor:pointer}
+
+.work{flex:1;overflow:auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.screen{display:flex;flex-direction:column;gap:18px;max-width:1240px;margin:0 auto}
+.screen-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.screen-head .sp{flex:1}
+.screen-head p{color:var(--fg-2);max-width:68ch;margin-top:4px}
+
+/* primitives */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.card-h .sp{flex:1}
+.card-b{padding:16px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g-main{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+@media (max-width:1000px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g-main{grid-template-columns:1fr}}
+@media (max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;color:var(--fg)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 9px;font-size:12.5px;border-radius:6px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn:focus-visible,.nav-btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.eval{color:var(--serious);background:var(--serious-soft)}
+.pill.new{color:var(--warn);background:var(--warn-soft)}
+.pill.data{color:var(--muted);background:var(--surface-2)}
+.pill.due{color:var(--accent);background:var(--accent-soft)}
+.pill.ok{color:var(--good);background:var(--good-soft)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:6px;padding:2px 8px;background:var(--surface-2);color:var(--fg-2)}
+.chip i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.chip.aw i{background:var(--aw)}.chip.pkg i{background:var(--pkg)}.chip.stat i{background:var(--stat)}.chip.ema i{background:var(--fg-2);border-radius:50%}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr.row-btn{cursor:pointer}tr.row-btn:hover td{background:var(--surface-2)}
+.tbl-wrap{overflow-x:auto}
+.stat{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.stat .v{font-family:var(--mono);font-size:24px;font-weight:500;letter-spacing:-.01em;line-height:1}
+.stat .l{font-size:12px;color:var(--muted)}
+.stat .d{font-size:12px;color:var(--fg-2)}
+.bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.bar.g>i{background:var(--good)}.bar.w>i{background:var(--warn)}.bar.s>i{background:var(--serious)}
+.notice{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:10px 12px;font-size:13px;background:var(--accent-soft);color:var(--fg)}
+.notice.warn{background:var(--warn-soft)}
+.notice svg{flex:none;margin-top:2px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--fg-2)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.swatch-row{display:flex;gap:2px}
+.swatch-row i{height:10px;width:18px;display:block;border-radius:2px}
+.insight{border-left:3px solid var(--serious);padding-left:14px}
+.insight.n{border-left-color:var(--warn)}
+.insight.d{border-left-color:var(--muted)}
+.insight dl{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;font-size:13px;margin-top:10px}
+.insight dt{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.03em}
+.insight dd{margin:0}
+.insight ul{margin:0;padding-left:16px}
+@media (max-width:640px){.insight dl{grid-template-columns:1fr}}
+details{border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
+summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:13px;list-style:none;display:flex;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+details[open] summary::before{transform:rotate(45deg)}
+details .inner{padding:0 12px 12px}
+.field{display:flex;flex-direction:column;gap:5px;font-size:13px}
+.field label{font-weight:600;color:var(--fg-2);font-size:12.5px}
+.field select,.field input,.field textarea{border:1px solid var(--line-strong);border-radius:7px;padding:7px 10px;background:var(--surface);min-width:0;width:100%}
+.field textarea{min-height:72px;resize:vertical}
+.radio-row{display:flex;gap:8px;flex-wrap:wrap}
+.radio-row label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;padding:6px 10px;cursor:pointer;font-weight:500}
+.radio-row input{accent-color:var(--accent)}
+.step{display:flex;gap:12px;align-items:flex-start}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none;font-family:var(--mono)}
+.timeline-list{display:flex;flex-direction:column}
+.timeline-list>div{display:grid;grid-template-columns:70px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.timeline-list>div:last-child{border-bottom:0}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.25);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.dialog{position:fixed;inset:0;background:rgba(10,16,24,.45);display:grid;place-items:center;z-index:40;padding:16px}
+.dialog .card{width:min(520px,100%);max-height:90vh;overflow:auto}
+.tip{position:fixed;z-index:30;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;padding:6px 9px;border-radius:6px;max-width:260px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.tip b{display:block;font-family:var(--mono);font-weight:500}
+.likert{display:grid;grid-template-columns:1fr repeat(5,44px);gap:4px;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+.likert:last-child{border-bottom:0}
+.likert .c{height:30px;border-radius:6px;background:var(--surface-2);display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.likert .c.on{background:var(--accent);color:var(--accent-fg);font-weight:600}
+@media (max-width:640px){.likert{grid-template-columns:1fr repeat(5,32px)}}
+.score-ring{width:92px;height:92px;flex:none}
+.cmp{display:grid;grid-template-columns:1fr auto auto auto;gap:6px 14px;font-size:13px;align-items:center}
+.cmp>b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.cmp>span{padding:7px 0;border-bottom:1px solid var(--line)}
+.delta{font-family:var(--mono);font-weight:500}
+.delta.good{color:var(--good)}.delta.bad{color:var(--serious)}
+svg text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.chart-wrap{overflow-x:auto}
+.day-row-sel rect.cell{stroke:var(--fg);stroke-width:1}
+.report{font-size:13.5px;line-height:1.65;max-width:72ch}
+.report h3{margin:16px 0 6px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.report ul{margin:4px 0;padding-left:18px}
+.note{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--surface-2)}
+.note .m{display:flex;gap:10px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.alert-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.alert-row:last-child{border-bottom:0}
+.alert-row.done{opacity:.55}
+.alert-row .act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:640px){.alert-row{grid-template-columns:auto 1fr}.alert-row .act{grid-column:1/-1;justify-content:flex-start}}
+.sev{width:8px;height:40px;border-radius:4px;background:var(--muted);margin-top:2px}
+.sev.eval{background:var(--serious)}.sev.new{background:var(--warn)}.sev.due{background:var(--accent)}
+.foot-ai{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;margin-top:12px}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{position:fixed;inset:0 auto 0 0;width:260px;z-index:20;transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 40px rgba(0,0,0,.25)}
+  .rail.open{transform:none}
+  .menu-btn{display:grid;place-items:center}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail" id="rail">
+    <div class="brand"><div class="brand-mark">PD</div><div><b>PDwise Clinical</b><span>Nöroloji · Hareket Bozuklukları</span></div></div>
+    <nav id="nav"></nav>
+    <div class="rail-foot"><b>Dr. Elif Sarıkaya</b>Hareket Bozuklukları Ünitesi<br><span class="small">Prototip v0.3 · 25 Eki 2026</span></div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Menü"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h12M3 9h12M3 13h12"/></svg></button>
+      <div class="pt-select"><span class="eyebrow">Hasta</span><select id="ptSel" aria-label="Hasta seç"></select></div>
+      <div class="seg" id="rangeSeg" role="group" aria-label="Dönem">
+        <button data-r="7">7 gün</button><button data-r="14" aria-pressed="true">14 gün</button><button data-r="30">30 gün</button>
+      </div>
+      <div class="sp"></div>
+      <span class="demo-tag">Sentetik demo verisi</span>
+    </header>
+    <main class="work" id="work"></main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="tip" id="tip" hidden></div>
+<div id="dlgHost"></div>
+
+<script>
+/* ---------- yardımcılar ---------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const DAYS_TR=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const TODAY=new Date(2026,9,25);
+function dateOf(dayIdx,total){const d=new Date(TODAY);d.setDate(d.getDate()-(total-1-dayIdx));return d}
+const fmtD=d=>`${d.getDate()} ${['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][d.getMonth()]}`;
+const hhmm=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(Math.round(m%60)).padStart(2,'0')}`;
+let toastT;function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400)}
+try{if(location.hash&&/^#[a-z\-]+$/.test(location.hash))window.__startView=location.hash.slice(1)}catch(e){}
+
+/* ---------- sentetik hasta seti ---------- */
+/* Tüm kişiler ve sayılar kurgusaldır. Gerçek hasta verisi içermez. */
+const SCHED=[8*60,12*60,16*60,20*60]; // planlı dozlar (dk)
+function genPatient(p){
+  const r=rng(p.seed);const total=30;const days=[];
+  for(let d=0;d<total;d++){
+    const date=dateOf(d,total);
+    const wear=p.wearBase+Math.round((r()-.5)*p.wearVar);
+    const doses=SCHED.slice(0,p.dosesPerDay).map((t,i)=>{
+      let status='alindi',delay=0;const u=r();
+      if(u<p.pMiss)status='atlandi';else if(u<p.pMiss+p.pLate){status='gecikti';delay=25+Math.round(r()*70)}
+      else if(u<p.pMiss+p.pLate+p.pUnknown)status='kayit-yok';
+      return{sched:t,status,delay,reported:status==='alindi'?t+Math.round((r()-.5)*14):status==='gecikti'?t+delay:null}
+    });
+    // saatlik motor yük 06:00–23:00 (0–100; yüksek=kötü)
+    const motor=[];let fogEvents=[];
+    for(let h=6;h<=23;h++){
+      let v=p.base+(r()-.5)*10;
+      // doz sonu kötüleşme: bir sonraki plandan önceki 60–90 dk
+      doses.forEach((ds,i)=>{
+        const next=SCHED[i+1]??(SCHED[i]+240);
+        const tookAt=ds.reported;
+        if(tookAt!=null){
+          const dt=h*60-tookAt;
+          if(dt>=30&&dt<=150)v-=p.response*(1-Math.abs(dt-90)/60)*.9;  // ON penceresi
+          if(h*60>=next-90&&h*60<next)v+=p.wearOff*(1+(ds.delay||0)/60);  // wearing-off
+        }else{ if(h*60>=ds.sched&&h*60<next)v+=p.wearOff*1.3 }
+      });
+      if(p.fog&&v>62&&r()<.35)fogEvents.push({h,n:1+Math.round(r()*2)});
+      motor.push(Math.max(8,Math.min(96,Math.round(v))))
+    }
+    const emas=[];
+    if(doses.some(x=>x.status==='kayit-yok')&&r()<.8){emas.push({t:hhmm(SCHED[doses.findIndex(x=>x.status==='kayit-yok')]+95),q:'Son planlanan ilacınızı aldınız mı?',a:r()<.6?'Evet, geç aldım':'Hatırlamıyorum'})}
+    if(Math.max(...motor)>70&&r()<.5)emas.push({t:hhmm(6*60+motor.indexOf(Math.max(...motor))*60+10),q:'Şu anda hareket etmekte zorlanıyor musunuz?',a:r()<.7?'Evet, belirgin':'Biraz'});
+    days.push({date,wear:Math.max(20,Math.min(100,wear)),doses,motor,fog:fogEvents,emas,
+      pkg:p.pkgDays&&d>=p.pkgDays[0]&&d<=p.pkgDays[1],stat:p.statDays&&d>=p.statDays[0]&&d<=p.statDays[1],
+      sleepH:+(5.6+r()*2.4).toFixed(1),steps:Math.round(2600+r()*4200)})
+  }
+  return{...p,days}
+}
+const PATIENTS=[
+ genPatient({id:'A-1042',label:'A-1042 · 67 E',age:67,sex:'E',dx:2019,hy:'2.5',meds:'Levodopa/Karbidopa 100/25 mg ×4, Pramipeksol ER 1.5 mg',domSym:'Motor dalgalanma, doz sonu kötüleşme',devices:['aw','pkg'],seed:11,base:36,response:22,wearOff:24,pMiss:.05,pLate:.16,pUnknown:.1,dosesPerDay:4,wearBase:88,wearVar:16,pkgDays:[19,25],fog:false,status:'eval',statusText:'Değerlendirme öneriliyor',lastVisit:'11 Eyl 2026',nextVisit:'12 Kas 2026',adlPrev:{date:'11 Eyl 2026',items:[1,2,2,1,1,1]}}),
+ genPatient({id:'B-2077',label:'B-2077 · 72 K',age:72,sex:'K',dx:2015,hy:'3',meds:'Levodopa/Benserazid 200/50 mg ×4, Rasajilin 1 mg',domSym:'Yürüyüş donması (FoG), postüral instabilite',devices:['aw','stat'],seed:23,base:44,response:16,wearOff:18,pMiss:.03,pLate:.08,pUnknown:.06,dosesPerDay:4,wearBase:82,wearVar:20,statDays:[21,27],fog:true,status:'new',statusText:'Yeni örüntü gözlendi',lastVisit:'29 Ağu 2026',nextVisit:'3 Kas 2026',adlPrev:{date:'29 Ağu 2026',items:[2,2,3,2,2,1]}}),
+ genPatient({id:'C-3310',label:'C-3310 · 58 E',age:58,sex:'E',dx:2022,hy:'2',meds:'Levodopa/Karbidopa 100/25 mg ×3',domSym:'Hafif tremor, stabil',devices:['aw'],seed:37,base:28,response:12,wearOff:8,pMiss:.02,pLate:.05,pUnknown:.18,dosesPerDay:3,wearBase:52,wearVar:36,fog:false,status:'data',statusText:'Veri yetersiz',lastVisit:'2 Eki 2026',nextVisit:'15 Ara 2026',adlPrev:null}),
+ genPatient({id:'D-4125',label:'D-4125 · 70 K',age:70,sex:'K',dx:2017,hy:'2.5',meds:'Levodopa/Karbidopa 100/25 mg ×4, Entakapon 200 mg ×4',domSym:'Diskinezi, hafif dalgalanma',devices:['aw','pkg'],seed:41,base:34,response:18,wearOff:12,pMiss:.02,pLate:.06,pUnknown:.05,dosesPerDay:4,wearBase:90,wearVar:10,pkgDays:[8,14],fog:false,status:'due',statusText:'Planlı takip yaklaşıyor',lastVisit:'30 Tem 2026',nextVisit:'28 Eki 2026',adlPrev:{date:'30 Tem 2026',items:[1,1,2,1,2,1]}}),
+ genPatient({id:'E-5188',label:'E-5188 · 64 E',age:64,sex:'E',dx:2020,hy:'2',meds:'Levodopa/Karbidopa 100/25 mg ×3, Ropinirol 8 mg',domSym:'Stabil, bradikinezi ön planda',devices:['aw'],seed:53,base:30,response:14,wearOff:6,pMiss:.01,pLate:.04,pUnknown:.04,dosesPerDay:3,wearBase:86,wearVar:12,fog:false,status:'ok',statusText:'Aktif değerlendirme yok',lastVisit:'20 Eyl 2026',nextVisit:'20 Oca 2027',adlPrev:{date:'20 Eyl 2026',items:[0,1,1,1,0,0]}}),
+];
+
+/* ---------- türetilmiş ölçütler ---------- */
+function window_(p){return p.days.slice(30-state.range)}
+function metrics(p){
+  const w=window_(p);const n=w.length;
+  const doses=w.flatMap(d=>d.doses);
+  const late=doses.filter(x=>x.status==='gecikti').length, miss=doses.filter(x=>x.status==='atlandi').length, unk=doses.filter(x=>x.status==='kayit-yok').length;
+  const wearOffDays=w.filter(d=>d.doses.some((ds,i)=>{const next=SCHED[i+1]??SCHED[i]+240;const idx=Math.floor((next-60)/60)-6;return idx>=0&&idx<d.motor.length&&d.motor[idx]>58})).length;
+  const highHours=w.reduce((a,d)=>a+d.motor.filter(v=>v>60).length,0);
+  const wear=Math.round(w.reduce((a,d)=>a+d.wear,0)/n);
+  const fog=w.reduce((a,d)=>a+d.fog.reduce((s,f)=>s+f.n,0),0);
+  const emaN=w.reduce((a,d)=>a+d.emas.length,0);
+  const reliability=Math.round(Math.min(100,wear*.55+(1-unk/doses.length)*35+(emaN>0?10:5)));
+  return{n,doses:doses.length,late,miss,unk,wearOffDays,highHours,offHoursPerDay:(highHours/n).toFixed(1),wear,fog,emaN,reliability,pkgDays:w.filter(d=>d.pkg).length,statDays:w.filter(d=>d.stat).length}
+}
+function motorColor(v){return v<30?'var(--m0)':v<45?'var(--m1)':v<60?'var(--m2)':v<75?'var(--m3)':'var(--m4)'}
+
+/* ---------- durum ---------- */
+const state={pt:0,range:14,view:window.__startView||'dashboard',layers:{aw:true,pkg:true,stat:true,ema:true,med:true},selDay:null,
+  alerts:null,notes:{},adl:{},insightFb:{},railOpen:false};
+state.alerts=[
+ {id:1,pt:0,sev:'eval',t:'Planlanan dozdan önce tekrarlayan motor kötüleşme',d:'Son 14 günün 6\'sında 15:00–16:00 aralığında motor yük eşiğin üzerinde; aynı günlerin 3\'ünde öğle dozu gecikmiş bildirildi.',when:'Bugün 07:40',st:'open'},
+ {id:2,pt:0,sev:'data',t:'4 dozda kayıt yok, hasta EMA sorusuna 2 kez yanıt vermedi',d:'İlaç alımı bu dönemler için bağımsız doğrulanamıyor; wearing-off yorumunun gücü düşük.',when:'Dün 21:10',st:'open'},
+ {id:3,pt:1,sev:'new',t:'STAT-ON: FoG epizodları 7 günlük izlem öncesine göre arttı',d:'Apple Watch verisinde eşzamanlı bradikinezi artışı; ilaç kayıtlarında düzensizlik yok.',when:'Dün 18:05',st:'open'},
+ {id:4,pt:2,sev:'data',t:'Saat takılma süresi %52 — rapor üretimi için yetersiz',d:'Hasta uygulamasından takılma hatırlatması gönderildi; hekim müdahalesi gerekmeyebilir.',when:'2 gün önce',st:'open'},
+ {id:5,pt:3,sev:'due',t:'Planlı takip randevusu 3 gün içinde',d:'Entakapon eklenmesi sonrası 12 haftalık karşılaştırma raporu hazır.',when:'3 gün önce',st:'open'},
+ {id:6,pt:0,sev:'new',t:'Uyku süresi 5 gündür 6 saatin altında',d:'Motor dışı belirti; hasta tarafından bildirilen uykuya dalma güçlüğü ile uyumlu.',when:'4 gün önce',st:'deferred'},
+];
+state.notes={0:[{d:'11 Eyl 2026',a:'Dr. E. Sarıkaya',t:'Öğleden sonra kötüleşme bildirimi. Hasta ilaçları düzenli aldığını ifade ediyor; önce 4 haftalık PDwise izlemi ile doz zamanlaması değerlendirilecek. Doz değişikliği yapılmadı.'}],1:[{d:'29 Ağu 2026',a:'Dr. E. Sarıkaya',t:'FoG şikâyeti artmış. STAT-ON ile 7 günlük yürüyüş izlemi planlandı. Fizyoterapi yönlendirmesi yapıldı.'}],3:[{d:'30 Tem 2026',a:'Dr. E. Sarıkaya',t:'Entakapon 200 mg her levodopa dozuna eklendi. 12 hafta sonra karşılaştırmalı değerlendirme.'}]};
+
+/* ---------- görünüm kayıt defteri ---------- */
+const VIEWS=[
+ {grp:'Genel bakış'},
+ {id:'dashboard',t:'Klinik Panel',ic:'M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z'},
+ {id:'priority',t:'Hasta Önceliklendirme',ic:'M2 4h12M2 8h8M2 12h5'},
+ {id:'alerts',t:'Uyarı İnceleme',ic:'M8 2l6 11H2z M8 7v3 M8 11.5v.5',badge:true},
+ {grp:'Hasta'},
+ {id:'overview',t:'Hasta Özeti',ic:'M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 14c0-3 3-4 6-4s6 1 6 4'},
+ {id:'timeline',t:'İlaç–Semptom Zaman Çizelgesi',ic:'M2 8h12 M4 5v6 M8 4v8 M12 6v4'},
+ {id:'profile',t:'Kişisel Yanıt Profili',ic:'M2 12c2 0 3-7 6-7s4 7 6 7'},
+ {id:'insights',t:'Klinik İçgörüler',ic:'M8 2a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9z M6 15h4'},
+ {id:'quality',t:'Veri Kalitesi ve Belirsizlik',ic:'M2 13l4-4 3 3 5-6 M11 6h3v3'},
+ {id:'tests',t:'Klinik Testler (ADL)',ic:'M4 2h8v12H4z M6 6h4 M6 9h4 M6 12h2'},
+ {grp:'Değerlendirme'},
+ {id:'notes',t:'Tedavi Değerlendirme Notları',ic:'M3 2h7l3 3v9H3z M5 8h6 M5 11h6'},
+ {id:'compare',t:'Takip Karşılaştırması',ic:'M2 13V7h4v6 M7 13V3h4v10 M12 13V9h2v4'},
+ {id:'report',t:'Klinik Rapor',ic:'M4 1h6l3 3v11H4z M6 8h5 M6 11h5 M6 5h2'},
+];
+const AI_FOOT='Bu içgörü, sensör ve hasta bildirimi örüntülerinin istatistiksel özetidir. Tanı koymaz, tedavi veya doz önermez. Yorum ve karar hekime aittir.';
+
+/* ---------- render ---------- */
+function renderNav(){
+  const openAlerts=state.alerts.filter(a=>a.st==='open').length;
+  $('#nav').innerHTML=VIEWS.map(v=>v.grp?`<div class="eyebrow grp">${v.grp}</div>`:
+   `<button class="nav-btn" data-view="${v.id}" ${state.view===v.id?'aria-current="page"':''}><svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="${v.ic}"/></svg><span>${v.t}</span>${v.badge&&openAlerts?`<span class="k">${openAlerts}</span>`:''}</button>`).join('');
+}
+function renderPtSel(){$('#ptSel').innerHTML=PATIENTS.map((p,i)=>`<option value="${i}" ${i===state.pt?'selected':''}>${esc(p.label)} — ${esc(p.statusText)}</option>`).join('')}
+function pillFor(st,txt){const cls={eval:'eval',new:'new',data:'data',due:'due',ok:'ok'}[st];return `<span class="pill ${cls}">${esc(txt)}</span>`}
+function devChips(p){return p.devices.map(d=>({aw:'<span class="chip aw"><i></i>Apple Watch</span>',pkg:'<span class="chip pkg"><i></i>PKG · 7 gün</span>',stat:'<span class="chip stat"><i></i>STAT-ON · 7 gün</span>'}[d])).join(' ')}
+function head(title,desc,extra=''){return `<div class="screen-head"><div><h1>${title}</h1>${desc?`<p>${desc}</p>`:''}</div><div class="sp"></div>${extra}</div>`}
+function ptBanner(p){const m=metrics(p);return `<div class="card"><div class="card-b" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+  <div><div class="eyebrow">Hasta</div><div style="font-family:var(--display);font-size:18px;font-weight:600">${esc(p.id)}</div><div class="small muted">${p.age} yaş · ${p.sex} · Tanı ${p.dx} · H&Y ${p.hy}</div></div>
+  <div>${pillFor(p.status,p.statusText)}</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">${devChips(p)}</div>
+  <div class="sp" style="flex:1"></div>
+  <div class="kv" style="grid-template-columns:auto auto;gap:2px 10px"><dt>Son vizit</dt><dd>${p.lastVisit}</dd><dt>Sonraki</dt><dd>${p.nextVisit}</dd></div>
+  <div style="min-width:150px"><div class="small muted" style="display:flex;justify-content:space-between"><span>Veri güvenilirliği</span><b class="num">${m.reliability}</b></div><div class="bar ${m.reliability>75?'g':m.reliability>55?'w':'s'}"><i style="width:${m.reliability}%"></i></div></div>
+</div></div>`}
+
+function render(){
+  renderNav();renderPtSel();
+  $$('#rangeSeg button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.r===state.range));
+  const p=PATIENTS[state.pt];
+  const fn=SCREENS[state.view]||SCREENS.dashboard;
+  $('#work').innerHTML=`<div class="screen">${fn(p)}</div>`;
+  $('#work').scrollTop=0;
+  if(POST[state.view])POST[state.view](p);
+}
+const SCREENS={}, POST={};
+
+/* --- 1. Klinik Panel --- */
+SCREENS.dashboard=()=>{
+  const counts={eval:0,new:0,data:0,due:0,ok:0};PATIENTS.forEach(p=>counts[p.status]++);
+  const open=state.alerts.filter(a=>a.st==='open');
+  return head('Klinik Panel','Bugün değerlendirme bekleyen hastalar, aktif izlem cihazları ve veri durumu. Tüm veriler sentetiktir.',`<span class="small muted">Pazar, 25 Ekim 2026</span>`)+
+  `<div class="grid g4">
+    <div class="stat"><span class="l">Değerlendirme öneriliyor</span><span class="v" style="color:var(--serious)">${counts.eval}</span><span class="d">Hasta · öncelikli görünümde</span></div>
+    <div class="stat"><span class="l">Yeni örüntü gözlendi</span><span class="v" style="color:var(--warn)">${counts.new}</span><span class="d">Hasta · doğrulama bekliyor</span></div>
+    <div class="stat"><span class="l">Veri yetersiz</span><span class="v">${counts.data}</span><span class="d">Hasta · rapor üretilemiyor</span></div>
+    <div class="stat"><span class="l">Takibi yaklaşan</span><span class="v" style="color:var(--accent)">${counts.due}</span><span class="d">Hasta · 7 gün içinde randevu</span></div>
+  </div>
+  <div class="grid g-main">
+    <div class="card"><div class="card-h"><h2>Bugünün hasta listesi</h2><div class="sp"></div><button class="btn sm" data-go="priority">Önceliklendirme görünümü</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Hasta</th><th>Durum</th><th>İzlem</th><th>Son 14 g OFF benzeri saat/gün</th><th>Gecikmiş / kayıtsız doz</th><th>Güvenilirlik</th></tr></thead><tbody>
+    ${PATIENTS.map((p,i)=>{const m=metrics(p);return `<tr class="row-btn" data-pt="${i}" data-go="overview"><td><b>${esc(p.id)}</b><div class="small muted">${p.age} · ${esc(p.domSym)}</div></td><td>${pillFor(p.status,p.statusText)}</td><td>${devChips(p)}</td><td class="num">${m.offHoursPerDay}</td><td class="num">${m.late} / ${m.unk}</td><td style="min-width:120px"><div class="bar ${m.reliability>75?'g':m.reliability>55?'w':'s'}"><i style="width:${m.reliability}%"></i></div><span class="small muted num">${m.reliability}/100</span></td></tr>`}).join('')}
+    </tbody></table></div></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card"><div class="card-h"><h2>Açık uyarılar</h2><div class="sp"></div><button class="btn sm" data-go="alerts">Tümü</button></div><div class="card-b" style="padding-top:4px">
+      ${open.slice(0,4).map(a=>`<div class="alert-row" style="grid-template-columns:auto 1fr"><div class="sev ${a.sev}"></div><div><div class="small muted">${esc(PATIENTS[a.pt].id)} · ${esc(a.when)}</div><b class="small">${esc(a.t)}</b></div></div>`).join('')}
+      </div></div>
+      <div class="card"><div class="card-h"><h2>Aktif klinik izlem cihazları</h2></div><div class="card-b" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="chip pkg"><i></i>PKG</span><span class="small">A-1042 · 7 günlük kayıt tamamlandı</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="chip stat"><i></i>STAT-ON</span><span class="small">B-2077 · 3. gün / 7</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="chip aw"><i></i>Apple Watch</span><span class="small">5 hasta · sürekli izlem</span></div>
+        <p class="small muted">Klinik envanterdeki 2 PKG, 1 STAT-ON cihazı. Veriler cihaz raporlarından yapılandırılmış içe aktarma ile alınır.</p>
+      </div></div>
+    </div>
+  </div>`;
+};
+
+/* --- 2. Önceliklendirme --- */
+SCREENS.priority=()=>head('Hasta Önceliklendirme','Sıralama; motor kötüleşme yükü, ilaç kaydı düzensizliği, yeni örüntü ve veri güvenilirliğinden türetilen operasyonel bir etikettir. Klinik doğrulanmış bir risk skoru değildir ve acil durum tespiti yapmaz.')+
+ `<div class="notice"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4M8 5v.5"/></svg><span>Etiketler <b>Değerlendirme öneriliyor</b>, <b>Yeni örüntü gözlendi</b>, <b>Veri yetersiz</b> ve <b>Planlı takip yaklaşıyor</b> olarak sınırlıdır; "yüksek risk" gibi klinik iddia içeren sınıflar kullanılmaz. Ağırlıklar klinisyenlerle birlikte belirlenecek hipotez ağırlıklarıdır.</span></div>
+ <div class="card"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hasta</th><th>Etiket</th><th>Gerekçe (sistem)</th><th>OFF benzeri saat/gün</th><th>Doz sonu günleri</th><th>Gecikmiş doz</th><th>Güvenilirlik</th><th></th></tr></thead><tbody>
+ ${[...PATIENTS.keys()].sort((a,b)=>['eval','new','due','data','ok'].indexOf(PATIENTS[a].status)-['eval','new','due','data','ok'].indexOf(PATIENTS[b].status)).map((i,k)=>{const p=PATIENTS[i],m=metrics(p);
+  const why={eval:`${m.wearOffDays}/${m.n} günde planlanan dozdan önce kötüleşme; ${m.late} gecikmiş doz`,new:`FoG epizodu ${m.fog}; önceki kişisel profile göre artış`,data:`Saat takılma %${m.wear}; ${m.unk} dozda kayıt yok`,due:`Randevu ${p.nextVisit}; karşılaştırma raporu hazır`,ok:`Kişisel temel çizgiden anlamlı sapma yok`}[p.status];
+  return `<tr class="row-btn" data-pt="${i}" data-go="overview"><td class="num muted">${k+1}</td><td><b>${esc(p.id)}</b><div class="small muted">${p.age} · H&Y ${p.hy}</div></td><td>${pillFor(p.status,p.statusText)}</td><td class="small">${why}</td><td class="num">${m.offHoursPerDay}</td><td class="num">${m.wearOffDays}</td><td class="num">${m.late}</td><td class="num">${m.reliability}</td><td><button class="btn sm" data-pt="${i}" data-go="insights">İncele</button></td></tr>`}).join('')}
+ </tbody></table></div></div>`;
+
+/* --- 3. Hasta özeti --- */
+SCREENS.overview=p=>{const m=metrics(p);const w=window_(p);
+ const spark=w.map(d=>Math.round(d.motor.reduce((a,b)=>a+b,0)/d.motor.length));
+ return head('Hasta Özeti',`${esc(p.id)} için son ${state.range} günün bütünleşik görünümü.`,`<button class="btn" data-go="timeline">Zaman çizelgesini aç</button> <button class="btn primary" data-go="insights">Klinik içgörüler</button>`)+ptBanner(p)+
+ `<div class="grid g4">
+  <div class="stat"><span class="l">OFF benzeri saat / gün</span><span class="v">${m.offHoursPerDay}</span><span class="d">Sensör tahmini · eşik >60</span></div>
+  <div class="stat"><span class="l">Doz sonu kötüleşme günü</span><span class="v">${m.wearOffDays}<span class="muted" style="font-size:14px">/${m.n}</span></span><span class="d">Planlı dozdan önceki saat</span></div>
+  <div class="stat"><span class="l">Gecikmiş · Atlanmış · Kayıt yok</span><span class="v">${m.late}·${m.miss}·${m.unk}</span><span class="d">${m.doses} planlı dozdan</span></div>
+  <div class="stat"><span class="l">Saat takılma</span><span class="v">%${m.wear}</span><span class="d">Apple Watch günlük ortalama</span></div>
+ </div>
+ <div class="grid g-main">
+  <div class="card"><div class="card-h"><h2>Günlük ortalama motor yük</h2><div class="sp"></div><span class="small muted">0–100 · yüksek = daha kötü · Apple Watch</span></div><div class="card-b chart-wrap" id="sparkHost"></div></div>
+  <div class="card"><div class="card-h"><h2>Tedavi ve klinik bağlam</h2></div><div class="card-b"><dl class="kv"><dt>Baskın belirti</dt><dd>${esc(p.domSym)}</dd><dt>Tedavi planı</dt><dd>${esc(p.meds)}</dd><dt>Plan kaynağı</dt><dd>Hekim onaylı (11 Eyl 2026)</dd><dt>Uyku (ort.)</dt><dd class="num">${(w.reduce((a,d)=>a+d.sleepH,0)/w.length).toFixed(1)} sa</dd><dt>Adım (ort.)</dt><dd class="num">${Math.round(w.reduce((a,d)=>a+d.steps,0)/w.length).toLocaleString('tr-TR')}</dd><dt>Son ADL</dt><dd>${p.adlPrev?`PDQ-39 ADL ${adlScore(p.adlPrev.items)} · ${p.adlPrev.date}`:'<span class="muted">Kayıt yok</span>'}</dd></dl>
+  <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-go="tests">ADL testi ata</button><button class="btn sm" data-go="notes">Not ekle</button></div></div></div>
+ </div>
+ <div class="card"><div class="card-h"><h2>Son hasta bildirimleri (EMA)</h2><div class="sp"></div><span class="small muted">${m.emaN} yanıt · hedefli sorular</span></div><div class="card-b" style="padding-top:4px"><div class="timeline-list">
+ ${w.flatMap(d=>d.emas.map(e=>({d,e}))).slice(-5).reverse().map(({d,e})=>`<div><span class="num muted">${fmtD(d.date)} ${e.t}</span><span><span class="muted">${esc(e.q)}</span> → <b>${esc(e.a)}</b></span></div>`).join('')||'<p class="muted small">Bu dönemde bildirim yok.</p>'}
+ </div></div></div>`}
+POST.overview=p=>{const w=window_(p);const vals=w.map(d=>Math.round(d.motor.reduce((a,b)=>a+b,0)/d.motor.length));
+ const W=Math.max(560,w.length*44),H=200,pl=36,pr=12,pt=14,pb=28;const x=i=>pl+i*(W-pl-pr)/(vals.length-1),y=v=>pt+(100-v)*(H-pt-pb)/100;
+ const path=vals.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v)}`).join(' ');
+ const area=path+` L${x(vals.length-1)},${y(0)} L${x(0)},${y(0)} Z`;
+ $('#sparkHost').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${Math.min(W,560)}px;display:block">
+ ${[0,25,50,75,100].map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)" stroke-dasharray="${g===60?'':''}"/><text x="${pl-6}" y="${y(g)+4}" text-anchor="end">${g}</text>`).join('')}
+ <line x1="${pl}" x2="${W-pr}" y1="${y(60)}" y2="${y(60)}" stroke="var(--serious)" stroke-dasharray="4 4" opacity=".7"/><text x="${W-pr}" y="${y(60)-5}" text-anchor="end" fill="var(--serious)">eşik 60</text>
+ ${w.map((d,i)=>d.pkg||d.stat?`<rect x="${x(i)-(W-pl-pr)/(vals.length-1)/2}" y="${pt}" width="${(W-pl-pr)/(vals.length-1)}" height="${H-pt-pb}" fill="var(--${d.pkg?'pkg':'stat'})" opacity=".09"/>`:'').join('')}
+ <path d="${area}" fill="var(--aw)" opacity=".10"/><path d="${path}" fill="none" stroke="var(--aw)" stroke-width="2" stroke-linejoin="round"/>
+ ${vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===vals.length-1?4.5:3}" fill="var(--aw)" stroke="var(--surface)" stroke-width="2" data-tip="${fmtD(w[i].date)} ${DAYS_TR[w[i].date.getDay()]}|Ort. motor yük ${v} · takılma %${w[i].wear}${w[i].pkg?' · PKG günü':''}${w[i].stat?' · STAT-ON günü':''}"/>`).join('')}
+ ${w.map((d,i)=>i%(state.range>14?3:1)===0?`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${fmtD(d.date)}</text>`:'').join('')}
+ </svg><div class="legend" style="margin-top:8px"><span><i style="background:var(--aw)"></i>Apple Watch günlük ortalama</span>${p.devices.includes('pkg')?'<span><i style="background:var(--pkg);opacity:.4"></i>PKG izlem günleri</span>':''}${p.devices.includes('stat')?'<span><i style="background:var(--stat);opacity:.4"></i>STAT-ON izlem günleri</span>':''}</div>`}
+
+/* --- 4. Zaman çizelgesi --- */
+SCREENS.timeline=p=>{const m=metrics(p);
+ return head('İlaç–Semptom Zaman Çizelgesi','Her satır bir gün, her hücre bir saat. Saatlik motor yük Apple Watch\'tan; PKG ve STAT-ON katmanları yalnızca 7 günlük klinik izlem döneminde görünür. İlaç işaretlerine tıklayarak kaydı düzeltebilirsiniz.')+ptBanner(p)+
+ `<div class="card"><div class="card-h"><h2>Veri katmanları</h2><div class="sp"></div>
+   <div class="seg" id="layerSeg">
+    <button data-l="aw" aria-pressed="${state.layers.aw}"><span class="chip aw" style="background:none;padding:0"><i></i>Apple Watch</span></button>
+    ${p.devices.includes('pkg')?`<button data-l="pkg" aria-pressed="${state.layers.pkg}"><span class="chip pkg" style="background:none;padding:0"><i></i>PKG BKS/DKS</span></button>`:''}
+    ${p.devices.includes('stat')?`<button data-l="stat" aria-pressed="${state.layers.stat}"><span class="chip stat" style="background:none;padding:0"><i></i>STAT-ON FoG</span></button>`:''}
+    <button data-l="med" aria-pressed="${state.layers.med}">İlaç kayıtları</button><button data-l="ema" aria-pressed="${state.layers.ema}">Hasta bildirimi</button>
+   </div></div>
+  <div class="card-b chart-wrap" id="heatHost"></div>
+  <div class="card-b" style="border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+   <div class="legend"><span>Motor yük</span><span class="swatch-row"><i style="background:var(--m0)"></i><i style="background:var(--m1)"></i><i style="background:var(--m2)"></i><i style="background:var(--m3)"></i><i style="background:var(--m4)"></i></span><span class="muted">düşük → yüksek</span></div>
+   <div class="legend"><span><svg width="14" height="14"><path d="M7 1v12" stroke="var(--fg)" stroke-width="2"/></svg>Alındı</span><span><svg width="14" height="14"><path d="M7 1v12" stroke="var(--warn)" stroke-width="2" stroke-dasharray="2 2"/></svg>Gecikti</span><span><svg width="14" height="14"><path d="M3 3l8 8M11 3l-8 8" stroke="var(--serious)" stroke-width="2"/></svg>Atlandı</span><span><svg width="14" height="14"><circle cx="7" cy="7" r="4" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 2"/></svg>Kayıt yok</span><span><svg width="14" height="14"><circle cx="7" cy="7" r="4" fill="var(--fg)"/></svg>EMA yanıtı</span>${p.devices.includes('stat')?'<span><svg width="14" height="14"><path d="M7 2l5 10H2z" fill="var(--stat)"/></svg>FoG epizodu</span>':''}</div>
+  </div></div>
+  <div class="grid g-main">
+   <div class="card"><div class="card-h"><h2 id="dayTitle">Gün detayı</h2><div class="sp"></div><span class="small muted">Satıra tıklayarak gün seçin</span></div><div class="card-b chart-wrap" id="dayHost"></div></div>
+   <div class="card"><div class="card-h"><h2>Dönem özeti</h2></div><div class="card-b"><dl class="kv"><dt>Planlı doz</dt><dd class="num">${m.doses}</dd><dt>Gecikmiş</dt><dd class="num">${m.late}</dd><dt>Atlanmış</dt><dd class="num">${m.miss}</dd><dt>Kayıt yok</dt><dd class="num">${m.unk}</dd><dt>Doz sonu kötüleşme günü</dt><dd class="num">${m.wearOffDays}/${m.n}</dd>${p.devices.includes('stat')?`<dt>FoG epizodu (STAT-ON)</dt><dd class="num">${m.fog}</dd>`:''}${p.devices.includes('pkg')?`<dt>PKG izlem günü</dt><dd class="num">${m.pkgDays}</dd>`:''}<dt>EMA yanıtı</dt><dd class="num">${m.emaN}</dd></dl>
+   <p class="small muted" style="margin-top:12px">Gecikme ve kötüleşme arasındaki ilişki gözlemseldir; nedensellik veya tedavi etkinliği göstermez. Kayıt düzeltmeleri hasta uygulamasına geri bildirilmez; hekim notu olarak saklanır.</p></div></div>
+  </div>`}
+function drawHeat(p){const w=window_(p);
+ const hours=18,cw=34,ch=22,pl=70,pt=24,pr=56;const W=pl+hours*cw+pr,Ht=pt+w.length*ch+10;
+ const L=state.layers;
+ let s=`<svg viewBox="0 0 ${W} ${Ht}" width="100%" style="min-width:${W}px;display:block" id="heatSvg">`;
+ for(let h=0;h<hours;h+=2)s+=`<text x="${pl+h*cw+cw/2}" y="14" text-anchor="middle">${String(h+6).padStart(2,'0')}</text>`;
+ w.forEach((d,i)=>{const y=pt+i*ch;const sel=state.selDay===i;
+  s+=`<g class="dayrow ${sel?'day-row-sel':''}" data-day="${i}" style="cursor:pointer"><text x="${pl-8}" y="${y+15}" text-anchor="end" ${sel?'fill="var(--fg)" font-weight="500"':''}>${fmtD(d.date)} ${DAYS_TR[d.date.getDay()]}</text>`;
+  d.motor.forEach((v,h)=>{s+=`<rect class="cell" x="${pl+h*cw+1}" y="${y+1}" width="${cw-2}" height="${ch-2}" rx="3" fill="${L.aw?motorColor(v):'var(--surface-2)'}" data-tip="${fmtD(d.date)} ${String(h+6).padStart(2,'0')}:00|Motor yük ${v}${d.pkg&&L.pkg?` · PKG BKS ${(v*.38+8).toFixed(0)} / DKS ${Math.max(0,(v-50)*.2).toFixed(1)}`:''}"/>`});
+  if(d.pkg&&L.pkg)s+=`<rect x="${pl+hours*cw+6}" y="${y+4}" width="6" height="${ch-8}" rx="2" fill="var(--pkg)"/>`;
+  if(d.stat&&L.stat){s+=`<rect x="${pl+hours*cw+16}" y="${y+4}" width="6" height="${ch-8}" rx="2" fill="var(--stat)"/>`;d.fog.forEach(f=>{const x=pl+(f.h-6)*cw+cw/2;s+=`<path d="M${x} ${y+4}l5 9h-10z" fill="var(--stat)" stroke="var(--surface)" stroke-width="1" data-tip="${fmtD(d.date)} ${f.h}:00|STAT-ON: ${f.n} FoG epizodu"/>`})}
+  if(L.med)d.doses.forEach((ds,k)=>{const x=pl+(ds.sched/60-6)*cw+cw/2;const t=`${fmtD(d.date)} · plan ${hhmm(ds.sched)}|`;
+   if(ds.status==='alindi')s+=`<line x1="${x}" x2="${x}" y1="${y+2}" y2="${y+ch-2}" stroke="var(--fg)" stroke-width="2.5" data-dose="${i}:${k}" data-tip="${t}Alındı ${hhmm(ds.reported)} · tıkla: düzenle" style="cursor:pointer"/>`;
+   else if(ds.status==='gecikti')s+=`<line x1="${x+(ds.delay/60)*cw}" x2="${x+(ds.delay/60)*cw}" y1="${y+2}" y2="${y+ch-2}" stroke="var(--warn)" stroke-width="2.5" stroke-dasharray="3 2" data-dose="${i}:${k}" data-tip="${t}Gecikti +${ds.delay} dk (${hhmm(ds.reported)}) · tıkla: düzenle" style="cursor:pointer"/>`;
+   else if(ds.status==='atlandi')s+=`<path d="M${x-4} ${y+7}l8 8M${x+4} ${y+7}l-8 8" stroke="var(--serious)" stroke-width="2" data-dose="${i}:${k}" data-tip="${t}Atlandı (hasta bildirimi) · tıkla: düzenle" style="cursor:pointer"/>`;
+   else s+=`<circle cx="${x}" cy="${y+ch/2}" r="5" fill="var(--surface)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 2" data-dose="${i}:${k}" data-tip="${t}Kayıt yok · bağımsız doğrulanamadı · tıkla: düzenle" style="cursor:pointer"/>`});
+  if(L.ema)d.emas.forEach(e=>{const [hh,mm]=e.t.split(':').map(Number);const x=pl+(hh+mm/60-6)*cw;s+=`<circle cx="${x}" cy="${y+ch/2}" r="4" fill="var(--fg)" stroke="var(--surface)" stroke-width="1.5" data-tip="${fmtD(d.date)} ${e.t} · EMA|${esc(e.q)} → ${esc(e.a)}"/>`});
+  s+='</g>'});
+ s+='</svg>';$('#heatHost').innerHTML=s}
+function drawDay(p){const w=window_(p);const host=$('#dayHost');if(state.selDay==null){host.innerHTML='<p class="muted small">Zaman çizelgesinde bir gün seçildiğinde saatlik motor eğrisi, ilaç işaretleri ve bildirimler burada açılır.</p>';$('#dayTitle').textContent='Gün detayı';return}
+ const d=w[state.selDay];$('#dayTitle').textContent=`${fmtD(d.date)} ${DAYS_TR[d.date.getDay()]} · gün detayı`;
+ const W=620,H=220,pl=34,pr=12,pt=14,pb=30;const x=h=>pl+(h-6)*(W-pl-pr)/17,y=v=>pt+(100-v)*(H-pt-pb)/100;
+ const path=d.motor.map((v,i)=>`${i?'L':'M'}${x(i+6)},${y(v)}`).join(' ');
+ let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px;display:block">
+ ${[0,25,50,75,100].map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(g)+4}" text-anchor="end">${g}</text>`).join('')}
+ <line x1="${pl}" x2="${W-pr}" y1="${y(60)}" y2="${y(60)}" stroke="var(--serious)" stroke-dasharray="4 4" opacity=".7"/>
+ ${d.doses.map(ds=>{const xs=x(ds.sched/60);let g=`<line x1="${xs}" x2="${xs}" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${xs}" y="${H-pb+12}" text-anchor="middle">${hhmm(ds.sched)}</text>`;
+   if(ds.reported!=null){const xr=x(ds.reported/60);g+=`<line x1="${xr}" x2="${xr}" y1="${pt}" y2="${H-pb}" stroke="${ds.status==='gecikti'?'var(--warn)':'var(--fg)'}" stroke-width="2"/>`}
+   else if(ds.status==='atlandi')g+=`<text x="${xs}" y="${pt+8}" text-anchor="middle" fill="var(--serious)">atlandı</text>`;else g+=`<text x="${xs}" y="${pt+8}" text-anchor="middle">kayıt yok</text>`;return g}).join('')}
+ <path d="${path} L${x(23)},${y(0)} L${x(6)},${y(0)} Z" fill="var(--aw)" opacity=".10"/><path d="${path}" fill="none" stroke="var(--aw)" stroke-width="2"/>
+ ${d.motor.map((v,i)=>`<circle cx="${x(i+6)}" cy="${y(v)}" r="3" fill="var(--aw)" stroke="var(--surface)" stroke-width="1.5" data-tip="${String(i+6).padStart(2,'0')}:00|Motor yük ${v}"/>`).join('')}
+ ${d.fog.map(f=>`<path d="M${x(f.h)} ${y(d.motor[f.h-6])-14}l5 9h-10z" fill="var(--stat)" data-tip="${f.h}:00|FoG ${f.n} epizod"/>`).join('')}
+ ${d.emas.map(e=>{const [hh,mm]=e.t.split(':').map(Number);return `<circle cx="${x(hh+mm/60)}" cy="${H-pb-8}" r="4.5" fill="var(--fg)" data-tip="${e.t} EMA|${esc(e.q)} → ${esc(e.a)}"/>`}).join('')}
+ <text x="${W-pr}" y="${H-4}" text-anchor="end">saat</text></svg>
+ <div class="kv small" style="margin-top:10px;grid-template-columns:auto 1fr auto 1fr"><dt>Takılma</dt><dd class="num">%${d.wear}</dd><dt>Uyku</dt><dd class="num">${d.sleepH} sa</dd><dt>Adım</dt><dd class="num">${d.steps.toLocaleString('tr-TR')}</dd><dt>Katman</dt><dd>${d.pkg?'<span class="chip pkg"><i></i>PKG</span>':''}${d.stat?' <span class="chip stat"><i></i>STAT-ON</span>':''}${!d.pkg&&!d.stat?'<span class="chip aw"><i></i>Yalnız Apple Watch</span>':''}</dd></div>`;
+ host.innerHTML=s}
+POST.timeline=p=>{drawHeat(p);drawDay(p);
+ $('#layerSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.layers[b.dataset.l]=!state.layers[b.dataset.l];b.setAttribute('aria-pressed',state.layers[b.dataset.l]);drawHeat(p)});
+ $('#heatHost').addEventListener('click',e=>{const dose=e.target.closest('[data-dose]');if(dose){const [di,k]=dose.dataset.dose.split(':').map(Number);openDoseDialog(p,di,k);return}const row=e.target.closest('.dayrow');if(row){state.selDay=+row.dataset.day;drawHeat(p);drawDay(p)}})}
+function openDoseDialog(p,di,k){const w=window_(p);const d=w[di],ds=d.doses[k];
+ const host=$('#dlgHost');host.innerHTML=`<div class="dialog" id="dlg"><div class="card"><div class="card-h"><h2>İlaç kaydını düzenle</h2><div class="sp"></div><button class="btn sm" data-close>Kapat</button></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+  <p class="small">${fmtD(d.date)} · planlı ${hhmm(ds.sched)} · mevcut kayıt: <b>${{alindi:'Alındı',gecikti:'Gecikti',atlandi:'Atlandı','kayit-yok':'Kayıt yok'}[ds.status]}</b></p>
+  <div class="field"><label>Yeni durum (hekim düzeltmesi)</label><div class="radio-row" id="doseRadios">
+   <label><input type="radio" name="ds" value="alindi" ${ds.status==='alindi'?'checked':''}>Alındı (zamanında)</label>
+   <label><input type="radio" name="ds" value="gecikti" ${ds.status==='gecikti'?'checked':''}>Gecikti</label>
+   <label><input type="radio" name="ds" value="atlandi" ${ds.status==='atlandi'?'checked':''}>Atlandı</label>
+   <label><input type="radio" name="ds" value="kayit-yok" ${ds.status==='kayit-yok'?'checked':''}>Kayıt yok</label></div></div>
+  <div class="field"><label for="delayIn">Gecikme (dakika, yalnız "Gecikti" için)</label><input id="delayIn" type="number" min="5" max="240" value="${ds.delay||45}"></div>
+  <div class="field"><label for="srcIn">Bilgi kaynağı</label><select id="srcIn"><option>Hasta ile görüşme (telefon)</option><option>Bakım veren beyanı</option><option>Vizit anamnezi</option></select></div>
+  <p class="small muted">Düzeltme, denetim kaydıyla hekim adına saklanır; hasta uygulamasındaki orijinal beyan değiştirilmez. Zaman çizelgesi ve içgörüler yeni kayda göre yeniden hesaplanır.</p>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" data-close>Vazgeç</button><button class="btn primary" id="doseSave">Kaydet</button></div></div></div></div>`;
+ host.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>host.innerHTML='');
+ $('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg')host.innerHTML=''});
+ $('#doseSave').onclick=()=>{const v=$('input[name=ds]:checked',host).value;ds.status=v;ds.delay=v==='gecikti'?+$('#delayIn').value:0;ds.reported=v==='alindi'?ds.sched:v==='gecikti'?ds.sched+ds.delay:null;
+  // motor serisini yeniden üret (basit yeniden hesap: gecikme etkisi)
+  recomputeMotor(p,d);host.innerHTML='';drawHeat(p);drawDay(p);toast('İlaç kaydı güncellendi · çizelge yeniden hesaplandı')}}
+function recomputeMotor(p,d){const r=rng(p.seed+d.date.getDate());for(let h=6;h<=23;h++){let v=p.base+(r()-.5)*10;d.doses.forEach((ds,i)=>{const next=SCHED[i+1]??SCHED[i]+240;if(ds.reported!=null){const dt=h*60-ds.reported;if(dt>=30&&dt<=150)v-=p.response*(1-Math.abs(dt-90)/60)*.9;if(h*60>=next-90&&h*60<next)v+=p.wearOff*(1+(ds.delay||0)/60)}else if(h*60>=ds.sched&&h*60<next)v+=p.wearOff*1.3});d.motor[h-6]=Math.max(8,Math.min(96,Math.round(v)))}}
+
+/* --- 5. Kişisel yanıt profili --- */
+SCREENS.profile=p=>{const w=window_(p);
+ // ortalama doz sonrası eğri (dakika -60..+240)
+ return head('Kişisel Yanıt Profili','Hastanın kendi kayıtlarından türetilen doz-çevresi motor eğrisi (Kişiselleştirilmiş Tedavi Yanıtı Parmak İzi). Hastayı kendi geçmişiyle karşılaştırır; popülasyon normu değildir.')+ptBanner(p)+
+ `<div class="grid g-main">
+  <div class="card"><div class="card-h"><h2>Doz çevresi ortalama motor yük</h2><div class="sp"></div><span class="small muted">zamanında alınan vs gecikmiş dozlar · ${state.range} gün</span></div><div class="card-b chart-wrap" id="profHost"></div></div>
+  <div class="card"><div class="card-h"><h2>Profil özeti</h2></div><div class="card-b" id="profSummary"></div></div>
+ </div>
+ <div class="card"><div class="card-h"><h2>Yöntem ve sınırlar</h2></div><div class="card-b small" style="display:grid;gap:8px;max-width:80ch">
+  <p><b>Kişisel temel çizgi:</b> ilk 7 günün saatlik medyanı. <b>Değişim tespiti:</b> gün ortalaması temel çizgiden 2 MAD'den fazla ayrıldığında işaretlenir. <b>Doz çevresi eğri:</b> bildirilen alım zamanı t=0 kabul edilerek hizalanır; kayıt olmayan dozlar eğriye dahil edilmez.</p>
+  <p><b>Kalibrasyon:</b> PKG/STAT-ON izlem günlerinde Apple Watch tahminleri cihaz skorlarıyla karşılaştırılır; bu demo'da uyum katsayısı yer tutucudur (Hypothesis).</p>
+  <p class="muted">Gözlemsel ilişki; nedensellik, tedavi etkinliği veya doz uygunluğu kanıtı değildir. Alternatif açıklamalar (aktivite, uyku, hastalık progresyonu, ölçüm hatası) içgörü kartlarında listelenir.</p></div></div>`}
+POST.profile=p=>{const w=window_(p);const bins=[];for(let t=-60;t<=240;t+=30)bins.push(t);
+ const acc={on:bins.map(()=>[]),late:bins.map(()=>[])};
+ w.forEach(d=>d.doses.forEach(ds=>{if(ds.reported==null)return;bins.forEach((t,bi)=>{const h=Math.round((ds.reported+t)/60);if(h<6||h>23)return;acc[ds.status==='gecikti'?'late':'on'][bi].push(d.motor[h-6])})}));
+ const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;const on=acc.on.map(avg),late=acc.late.map(avg);
+ const W=620,H=240,pl=34,pr=16,pt=16,pb=34;const x=i=>pl+i*(W-pl-pr)/(bins.length-1),y=v=>pt+(100-v)*(H-pt-pb)/100;
+ const line=(arr,c,dash='')=>{const pts=arr.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);return `<path d="${pts.map((q,i)=>`${i?'L':'M'}${q[0]},${q[1]}`).join(' ')}" fill="none" stroke="${c}" stroke-width="2" ${dash?`stroke-dasharray="${dash}"`:''}/>`+pts.map((q,i)=>`<circle cx="${q[0]}" cy="${q[1]}" r="3.5" fill="${c}" stroke="var(--surface)" stroke-width="1.5"/>`).join('')};
+ $('#profHost').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px;display:block">
+ ${[0,25,50,75,100].map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(g)+4}" text-anchor="end">${g}</text>`).join('')}
+ <line x1="${x(2)}" x2="${x(2)}" y1="${pt}" y2="${H-pb}" stroke="var(--fg)" stroke-dasharray="3 3"/><text x="${x(2)+4}" y="${pt+10}">bildirilen alım (t=0)</text>
+ <line x1="${pl}" x2="${W-pr}" y1="${y(60)}" y2="${y(60)}" stroke="var(--serious)" stroke-dasharray="4 4" opacity=".6"/>
+ ${line(on,'var(--accent)')}${line(late,'var(--warn)','5 3')}
+ ${bins.map((t,i)=>`<text x="${x(i)}" y="${H-pb+14}" text-anchor="middle">${t>0?'+':''}${t}</text>`).join('')}<text x="${W-pr}" y="${H-4}" text-anchor="end">dk</text></svg>
+ <div class="legend" style="margin-top:8px"><span><i style="background:var(--accent)"></i>Zamanında alınan dozlar (n=${acc.on[2].length})</span><span><i style="background:var(--warn)"></i>Gecikmiş dozlar (n=${acc.late[2].length})</span></div>`;
+ const peakOn=on.filter(Boolean).length?Math.min(...on.filter(v=>v!=null)):null,endOn=on[on.length-1],endLate=late[late.length-1];
+ $('#profSummary').innerHTML=`<dl class="kv"><dt>En düşük yük (ON)</dt><dd class="num">${peakOn?.toFixed(0)??'—'} · ~+${bins[on.indexOf(peakOn)]} dk</dd><dt>+240 dk yük</dt><dd class="num">${endOn?.toFixed(0)??'—'} <span class="muted">(zamanında)</span> · ${endLate?.toFixed(0)??'—'} <span class="muted">(gecikmiş)</span></dd><dt>Örüntü</dt><dd>${endOn>58?'Planlı sonraki dozdan önce tekrarlayan yükselme':'Doz aralığı sonunda belirgin yükselme yok'}</dd><dt>Kişisel temel çizgi</dt><dd class="num">${Math.round(w.slice(0,7).flatMap(d=>d.motor).sort((a,b)=>a-b)[Math.floor(w.slice(0,7).flatMap(d=>d.motor).length/2)])}</dd><dt>Gecikme etkisi</dt><dd>${endLate&&endOn&&endLate-endOn>6?`Gecikmiş dozlarda aralık sonu yük ${(endLate-endOn).toFixed(0)} puan daha yüksek (gözlemsel)`:'Ayırt edici fark yok veya örneklem yetersiz'}</dd></dl><p class="foot-ai">${AI_FOOT}</p>`}
+
+/* --- 6. İçgörüler --- */
+function insightsFor(p){const m=metrics(p);const list=[];
+ if(p.status==='eval'||m.wearOffDays>=m.n*.3)list.push({sev:'e',title:'Planlanan sonraki dozdan önce tekrarlayan motor kötüleşme',period:`Son ${m.n} gün · ${m.wearOffDays} günde`,sources:['Apple Watch saatlik motor yük',m.pkgDays?'PKG BKS (7 gün)':null,'Hasta ilaç kaydı','EMA yanıtları'].filter(Boolean),
+  reliability:`${m.reliability}/100 · takılma %${m.wear}; ${m.unk} dozda bağımsız doğrulama yok`,
+  explain:['Doz sonu kötüleşmesi (wearing-off) ile uyumlu zamanlama',`${m.late} gecikmiş doz bildirimi; gecikmeli günlerde aralık sonu yükü daha yüksek`],
+  alt:['Öğleden sonra artan fiziksel aktivite veya yorgunluk','Yetersiz uyku günleriyle örtüşme (5 gün < 6 sa)','Sensör tahmininde diskinezi ile bradikinezinin karışması'],
+  unc:['Kayıt olmayan dozlarda alım zamanı bilinmiyor','Apple Watch tahmini PKG dönemi dışında kalibre değil'],
+  points:['Doz aralığı ve zamanlamanın hastayla gözden geçirilmesi','Gecikme nedenleri (unutma, yemek, yan etki) için hedefli soru','Uyum sorunu mu, yanıt yetersizliği mi: iki senaryo ayrı değerlendirilmeli'],
+  cmp:'Önceki 14 güne göre doz sonu günleri +3; ortalama yük +4 puan'});
+ if(p.fog)list.push({sev:'n',title:'FoG epizodlarında artış ve eşzamanlı bradikinezi',period:`STAT-ON izlem günleri · ${m.fog} epizod`,sources:['STAT-ON FoG tespiti','Apple Watch motor yük','Hasta bildirimi'],reliability:`${m.reliability}/100 · STAT-ON ${m.statDays} gün`,
+  explain:['OFF dönemleriyle örtüşen donma epizodları','Yürüyüş değişkenliğinde artış'],alt:['Ev içi dar alan / ortam faktörleri','Anksiyete ile ilişkili donma','Cihaz yerleşim farkı'],unc:['STAT-ON öncesi referans dönem yok; artış hasta beyanına dayalı'],points:['FoG\'un ilaç döngüsüyle ilişkisinin değerlendirilmesi','Fizyoterapi/işaret stratejileri'],cmp:'Hasta beyanı: önceki aya göre "daha sık"'});
+ if(m.unk>=3||m.wear<65)list.push({sev:'d',title:'Veri eksikliği yorum gücünü sınırlıyor',period:`Son ${m.n} gün`,sources:['Cihaz takılma süresi','İlaç kaydı tamlığı','EMA yanıt oranı'],reliability:`${m.reliability}/100`,explain:[`${m.unk} dozda kayıt yok; saat takılma %${m.wear}`],alt:['Hasta uygulamayı kullanmayı bıraktı','Bildirim yorgunluğu'],unc:['Eksik veri rastgele olmayabilir (kötü günlerde daha az kayıt)'],points:['Veri toplama yükünün hastayla konuşulması','Bakım veren desteği'],cmp:'—'});
+ if(!list.length)list.push({sev:'d',title:'Kişisel temel çizgiden anlamlı sapma yok',period:`Son ${m.n} gün`,sources:['Apple Watch','İlaç kaydı'],reliability:`${m.reliability}/100`,explain:['Motor yük ve ilaç kaydı önceki profille uyumlu'],alt:['—'],unc:['Sensör motor dışı belirtileri ölçmez'],points:['Planlı takip sürdürülebilir'],cmp:'Stabil'});
+ return list}
+SCREENS.insights=p=>head('Klinik İçgörüler','Her içgörü aynı yapıyı izler: gözlenen örüntü, dönem, kaynaklar, güvenilirlik, olası ve alternatif açıklamalar, belirsizlikler ve hekimin değerlendirebileceği noktalar. Sistem açıklama üretir, karar vermez.')+ptBanner(p)+
+ insightsFor(p).map((ins,i)=>`<div class="card"><div class="card-b"><div class="insight ${ins.sev}">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><h2>${esc(ins.title)}</h2><div class="sp" style="flex:1"></div>${ins.sev==='e'?pillFor('eval','Değerlendirme öneriliyor'):ins.sev==='n'?pillFor('new','Yeni örüntü'):pillFor('data','Bilgi')}</div>
+  <dl><dt>Dönem</dt><dd>${ins.period}</dd><dt>Veri kaynakları</dt><dd>${ins.sources.map(s=>`<span class="chip">${esc(s)}</span>`).join(' ')}</dd><dt>Güvenilirlik</dt><dd>${esc(ins.reliability)}</dd>
+  <dt>Olası açıklamalar</dt><dd><ul>${ins.explain.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></dd><dt>Alternatif açıklamalar</dt><dd><ul>${ins.alt.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></dd><dt>Belirsizlikler</dt><dd><ul>${ins.unc.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></dd>
+  <dt>Değerlendirilebilecek noktalar</dt><dd><ul>${ins.points.map(e=>`<li>${esc(e)}</li>`).join('')}</ul></dd><dt>Önceki dönem</dt><dd>${esc(ins.cmp)}</dd></dl>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+   <details style="flex:1;min-width:240px"><summary>AI açıklaması: bu içgörü hangi veriye dayanıyor?</summary><div class="inner small"><p><b>Kural:</b> planlı dozdan önceki 90 dk içinde saatlik yük > 60 olan gün sayısı ≥ dönemin %30'u → "tekrarlayan kötüleşme". <b>Katkı:</b> Apple Watch yükü %62, ilaç kaydı zamanlaması %28, EMA %10 (hipotez ağırlıkları). <b>Model sürümü:</b> rules-v0.3 · <b>Hariç tutulan:</b> takılma %40 altındaki saatler. <button class="btn sm" data-go="timeline" style="margin-top:6px">Dayanak verileri çizelgede göster</button></p></div></details>
+   <div class="seg"><button data-fb="${i}:agree" aria-pressed="${state.insightFb[p.id+i]==='agree'}">Klinik olarak anlamlı</button><button data-fb="${i}:unsure" aria-pressed="${state.insightFb[p.id+i]==='unsure'}">Emin değilim</button><button data-fb="${i}:reject" aria-pressed="${state.insightFb[p.id+i]==='reject'}">Yanlış pozitif</button></div>
+  </div><p class="foot-ai">${AI_FOOT}</p></div></div></div>`).join('')+
+ `<div class="notice"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7v4M8 5v.5"/></svg><span><b>Kritik ayrım:</b> Tedaviye uyum ≠ tedavi etkinliği. İlaç alım kaydı, ilacın klinik etkisi, hasta bildirimi ve sensör tahmini ayrı kavramlardır; PDwise bunları ilişkilendirir, eşitlemez.</span></div>`;
+POST.insights=p=>{$('#work').addEventListener('click',e=>{const b=e.target.closest('[data-fb]');if(!b)return;const [i,v]=b.dataset.fb.split(':');state.insightFb[p.id+i]=v;$$('[data-fb^="'+i+':"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.fb.endsWith(v)));toast('Geri bildirim kaydedildi · model izlemeye eklendi')})}
+
+/* --- 7. Veri kalitesi --- */
+SCREENS.quality=p=>{const m=metrics(p);const w=window_(p);
+ return head('Veri Kalitesi ve Belirsizlik','Hangi veri güvenilir, hangisi eksik veya belirsiz. Rapor ve içgörülerin gücü bu göstergelerle sınırlıdır.')+ptBanner(p)+
+ `<div class="grid g3">
+  <div class="card"><div class="card-b"><div class="eyebrow">Apple Watch</div><div class="stat" style="border:0;padding:8px 0"><span class="v">%${m.wear}</span><span class="l">ortalama günlük takılma</span></div><div class="bar ${m.wear>75?'g':m.wear>55?'w':'s'}"><i style="width:${m.wear}%"></i></div><p class="small muted" style="margin-top:8px">${w.filter(d=>d.wear<60).length} günde takılma %60'ın altında; bu saatler motor tahmininden çıkarıldı.</p></div></div>
+  <div class="card"><div class="card-b"><div class="eyebrow">İlaç kaydı tamlığı</div><div class="stat" style="border:0;padding:8px 0"><span class="v">%${Math.round((1-m.unk/m.doses)*100)}</span><span class="l">kaydı olan planlı doz</span></div><div class="bar ${m.unk/m.doses<.1?'g':'w'}"><i style="width:${(1-m.unk/m.doses)*100}%"></i></div><p class="small muted" style="margin-top:8px">${m.unk} dozda kayıt yok. Kayıt "alındı" demek, ilacın alındığının bağımsız doğrulaması değildir.</p></div></div>
+  <div class="card"><div class="card-b"><div class="eyebrow">Hasta bildirimi (EMA)</div><div class="stat" style="border:0;padding:8px 0"><span class="v">${m.emaN}</span><span class="l">yanıt · ${Math.round(m.emaN*100/Math.max(1,m.emaN+2))}% yanıt oranı</span></div><div class="bar"><i style="width:${Math.round(m.emaN*100/Math.max(1,m.emaN+2))}%"></i></div><p class="small muted" style="margin-top:8px">Günlük en fazla 2 hedefli soru. Yanıtlanmayan: 2.</p></div></div>
+ </div>
+ <div class="grid g-main">
+  <div class="card"><div class="card-h"><h2>Günlük veri kapsamı</h2></div><div class="tbl-wrap"><table><thead><tr><th>Gün</th><th>Takılma</th><th>Doz kaydı</th><th>Klinik cihaz</th><th>EMA</th><th>Kullanılabilirlik</th></tr></thead><tbody>
+  ${w.map(d=>{const unk=d.doses.filter(x=>x.status==='kayit-yok').length;const ok=d.wear>=60&&unk===0;return `<tr><td class="num">${fmtD(d.date)}</td><td class="num">%${d.wear}</td><td class="num">${d.doses.length-unk}/${d.doses.length}</td><td>${d.pkg?'<span class="chip pkg"><i></i>PKG</span>':d.stat?'<span class="chip stat"><i></i>STAT-ON</span>':'<span class="muted">—</span>'}</td><td class="num">${d.emas.length}</td><td>${ok?'<span class="pill ok">Tam</span>':d.wear<40?'<span class="pill data">Yetersiz</span>':'<span class="pill new">Kısmi</span>'}</td></tr>`}).join('')}
+  </tbody></table></div></div>
+  <div class="card"><div class="card-h"><h2>Belirsizlik kaynakları</h2></div><div class="card-b small" style="display:grid;gap:10px">
+   <div><b>Cihazlar arası ölçüm farkı</b><p class="muted">Apple Watch tremor/diskinezi göstergeleri ile PKG BKS/DKS farklı ölçeklerdir; harmonizasyon katmanı z-skoru ile hizalar (metric_standardization_score: 0.71 · Assumption).</p></div>
+   <div><b>Eksik verinin rastgele olmaması</b><p class="muted">Kötü günlerde kayıt daha az olabilir; bu durum yükün olduğundan düşük görünmesine yol açar.</p></div>
+   <div><b>Zaman eşleştirmesi</b><p class="muted">Saat dilimi Europe/Istanbul; cihaz saat kayması &lt; 2 dk doğrulandı.</p></div>
+   <div><b>Model kalibrasyonu</b><p class="muted">Motor yük tahmini PKG günleriyle karşılaştırıldı; demo verisinde uyum yer tutucudur.</p></div>
+  </div></div>
+ </div>`}
+
+/* --- 8. Klinik testler (ADL) --- */
+const ADL_ITEMS=[{k:'Ev içi günlük işler'},{k:'Giyinme'},{k:'Düğme ilikleme / bağcık bağlama'},{k:'El yazısı'},{k:'Yiyecek kesme'},{k:'İçecek tutma, dökmeden'}];
+const LIKERT=['Hiçbir zaman','Nadiren','Bazen','Sık sık','Her zaman'];
+function adlScore(items){return Math.round(items.reduce((a,b)=>a+b,0)/(items.length*4)*100)}
+SCREENS.tests=p=>{const a=state.adl[p.id]||{st:'none'};
+ return head('Klinik Testler (ADL)','Hastaya PDwise Care uygulaması üzerinden atanan hasta bildirimli ölçekler. Bu ekranda PDQ-39\'un günlük yaşam aktiviteleri (ADL) alt ölçeği yönetilir.')+ptBanner(p)+
+ `<div class="notice warn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l6 11H2z M8 7v3 M8 11.5v.5"/></svg><span><b>Lisans notu:</b> PDQ-39 telif korumalı bir ölçektir. Bu prototipte madde metinleri yerine yalnızca alan başlıkları gösterilir; gerçek kullanım öncesi lisans sahibinden izin alınmalı ve Türkçe geçerliliği yapılmış sürüm kullanılmalıdır. Puanlama: alt ölçek = (madde toplamı / 24) × 100; yüksek puan daha fazla güçlük.</span></div>
+ <div class="grid g-main">
+  <div class="card"><div class="card-h"><h2>Test ata</h2><div class="sp"></div>${a.st==='none'?'':a.st==='assigned'?pillFor('due','Atandı · hasta yanıtı bekleniyor'):pillFor('ok','Tamamlandı')}</div>
+  ${a.st==='none'?`<div class="card-b" style="display:grid;gap:14px">
+   <div class="field"><label for="tTest">Ölçek</label><select id="tTest"><option>PDQ-39 · Günlük Yaşam Aktiviteleri alt ölçeği (6 madde)</option><option disabled>PDQ-39 · Tam form (39 madde) — lisans sonrası</option><option disabled>Schwab & England ADL — sonraki sürüm</option></select></div>
+   <div class="field"><label>Zamanlama</label><div class="radio-row"><label><input type="radio" name="tw" value="now" checked>Şimdi gönder</label><label><input type="radio" name="tw" value="pre">Randevudan 3 gün önce (${p.nextVisit})</label><label><input type="radio" name="tw" value="rep">Her 4 haftada bir</label></div></div>
+   <div class="field"><label>Yanıt koşulu</label><div class="radio-row"><label><input type="radio" name="tc" value="any" checked>Günün herhangi bir saati</label><label><input type="radio" name="tc" value="on">Hasta ON bildiriminde</label><label><input type="radio" name="tc" value="off">Hasta OFF bildiriminde</label></div><span class="small muted">PDQ-39 "son 1 ay" sorar; ON/OFF koşulu yalnızca bildirim zamanını belirler, yanıt dönemini değil.</span></div>
+   <div class="field"><label><input type="checkbox" id="tCg" checked style="accent-color:var(--accent)"> Bakım veren yardımıyla doldurulabilir (hasta izni mevcut)</label></div>
+   <div class="field"><label for="tNote">Hastaya kısa not (isteğe bağlı)</label><textarea id="tNote" placeholder="Örn. Randevu öncesi günlük işlerdeki zorlukları birlikte değerlendirmek için kısa bir anket gönderiyorum. Yaklaşık 2 dakika sürer."></textarea></div>
+   <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" id="tPreview">Hasta görünümünü önizle</button><button class="btn primary" id="tAssign">Hastaya gönder</button></div></div>`
+  :a.st==='assigned'?`<div class="card-b" style="display:grid;gap:12px">
+   <div class="step"><span class="n">1</span><div><b>Hasta uygulamasına iletildi</b><div class="small muted">${a.when} · PDwise Care bildirimi · ${a.cg?'bakım veren yardımı açık':'yalnız hasta'}</div></div></div>
+   <div class="step"><span class="n">2</span><div><b>Hasta yanıtı bekleniyor</b><div class="small muted">Yanıt gelmezse 48 saat sonra bir kez hatırlatılır; üçüncü bildirim gönderilmez.</div></div></div>
+   <div class="step"><span class="n" style="background:var(--surface-2);color:var(--muted)">3</span><div class="muted">Sonuç bu ekranda ve Hasta Özeti'nde görünür</div></div>
+   <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" id="tCancel">Atamayı iptal et</button><button class="btn primary" id="tSimulate">Demo: hasta yanıtını simüle et</button></div></div>`
+  :`<div class="card-b" style="display:grid;gap:14px">
+   <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
+    <svg class="score-ring" viewBox="0 0 92 92"><circle cx="46" cy="46" r="38" fill="none" stroke="var(--surface-2)" stroke-width="9"/><circle cx="46" cy="46" r="38" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${2*Math.PI*38}" stroke-dashoffset="${2*Math.PI*38*(1-adlScore(a.items)/100)}" transform="rotate(-90 46 46)"/><text x="46" y="51" text-anchor="middle" fill="var(--fg)" style="font-size:20px;font-weight:500">${adlScore(a.items)}</text></svg>
+    <div><div class="eyebrow">PDQ-39 ADL alt ölçeği</div><div style="font-family:var(--display);font-size:18px;font-weight:600">${adlScore(a.items)} / 100</div><div class="small muted">Yanıt: ${a.when} · ${a.cg?'bakım veren yardımıyla':'hasta'} · ~1 dk 50 sn</div>
+    ${p.adlPrev?`<div class="small" style="margin-top:4px">Önceki: <b class="num">${adlScore(p.adlPrev.items)}</b> (${p.adlPrev.date}) → değişim <span class="delta ${adlScore(a.items)-adlScore(p.adlPrev.items)>0?'bad':'good'}">${adlScore(a.items)-adlScore(p.adlPrev.items)>0?'+':''}${adlScore(a.items)-adlScore(p.adlPrev.items)}</span></div>`:'<div class="small muted">İlk ölçüm; karşılaştırma yok.</div>'}</div></div>
+   <div><div class="likert" style="border-bottom:1px solid var(--line-strong)"><span class="eyebrow">Madde alanı</span>${LIKERT.map((l,i)=>`<span class="small muted" style="text-align:center;font-size:10px;line-height:1.1">${l}</span>`).join('')}</div>
+   ${ADL_ITEMS.map((it,i)=>`<div class="likert"><span>${it.k}${p.adlPrev&&p.adlPrev.items[i]!==a.items[i]?`<span class="small muted"> · önceki ${p.adlPrev.items[i]}</span>`:''}</span>${[0,1,2,3,4].map(v=>`<span class="c ${a.items[i]===v?'on':''}">${v}</span>`).join('')}</div>`).join('')}</div>
+   <p class="small muted">Madde metinleri lisans nedeniyle gösterilmez. Bu sonuç hasta beyanıdır; sensör verisiyle birlikte Hasta Özeti'nde listelenir, tanı veya tedavi kararı üretmez.</p>
+   <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" id="tReset">Yeni atama</button><button class="btn" data-go="notes">Not ekle</button><button class="btn primary" data-go="report">Rapora dahil et</button></div></div>`}
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+   <div class="card"><div class="card-h"><h2>Test geçmişi</h2></div><div class="tbl-wrap"><table><thead><tr><th>Tarih</th><th>Ölçek</th><th>Skor</th><th>Kaynak</th></tr></thead><tbody>
+    ${a.st==='done'?`<tr><td class="num">${a.when}</td><td>PDQ-39 ADL</td><td class="num">${adlScore(a.items)}</td><td>Hasta uygulaması</td></tr>`:''}
+    ${p.adlPrev?`<tr><td class="num">${p.adlPrev.date}</td><td>PDQ-39 ADL</td><td class="num">${adlScore(p.adlPrev.items)}</td><td>Vizitte, kâğıt form</td></tr>`:'<tr><td colspan="4" class="muted small">Kayıt yok</td></tr>'}
+   </tbody></table></div></div>
+   <div class="card"><div class="card-h"><h2>Neden ADL?</h2></div><div class="card-b small" style="display:grid;gap:8px"><p>Sensörler hareketi ölçer; hastanın günlük yaşamının bu hareketten nasıl etkilendiğini ölçmez. ADL ölçeği bu boşluğu hasta beyanıyla kapatır ve PKG/STAT-ON raporlarında bulunmayan bağlamı ekler.</p><p class="muted">Sensör motor yükü ile ADL puanı arasındaki ilişki bu hastada 2 ölçüm noktasıyla yorumlanamaz; en az 3 ölçüm gerekir (Hypothesis).</p></div></div>
+  </div>
+ </div>`}
+POST.tests=p=>{const a=state.adl[p.id]||{st:'none'};
+ const nowStr=`${fmtD(TODAY)} 2026 ${new Date().getHours().toString().padStart(2,'0')}:${new Date().getMinutes().toString().padStart(2,'0')}`;
+ $('#tAssign')?.addEventListener('click',()=>{state.adl[p.id]={st:'assigned',when:nowStr,cg:$('#tCg').checked};render();toast('PDQ-39 ADL hastaya gönderildi')});
+ $('#tPreview')?.addEventListener('click',()=>{const host=$('#dlgHost');host.innerHTML=`<div class="dialog" id="dlg"><div class="card" style="width:min(380px,100%)"><div class="card-h"><h2>Hasta görünümü · PDwise Care</h2><div class="sp"></div><button class="btn sm" data-close>Kapat</button></div><div class="card-b" style="display:grid;gap:12px;font-size:16px">
+  <p style="font-size:14px;color:var(--fg-2)">Dr. Sarıkaya sizden kısa bir anket istedi. Son 1 ayı düşünerek yanıtlayın. 6 soru, yaklaşık 2 dakika.</p>
+  <div style="border:1px solid var(--line);border-radius:12px;padding:16px"><div class="eyebrow">Soru 1 / 6</div><p style="font-family:var(--display);font-weight:600;font-size:18px;margin-top:6px">[Madde metni — lisans sonrası eklenecek]</p><div style="display:grid;gap:8px;margin-top:12px">${LIKERT.map(l=>`<div style="border:1px solid var(--line-strong);border-radius:10px;padding:12px 14px;min-height:48px;display:flex;align-items:center">${l}</div>`).join('')}</div></div>
+  <p class="small muted">Büyük dokunma hedefleri (≥48 px), yüksek kontrast, "daha sonra" seçeneği ve bakım veren modu hasta uygulamasında mevcuttur.</p></div></div></div>`;host.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>host.innerHTML='');$('#dlg').addEventListener('click',e=>{if(e.target.id==='dlg')host.innerHTML=''})});
+ $('#tCancel')?.addEventListener('click',()=>{delete state.adl[p.id];render();toast('Atama iptal edildi')});
+ $('#tSimulate')?.addEventListener('click',()=>{const r=rng(p.seed+99);const base=p.adlPrev?p.adlPrev.items:[1,1,2,1,1,1];const items=base.map(v=>Math.max(0,Math.min(4,v+(p.status==='eval'?(r()<.5?1:0):p.status==='ok'?0:(r()<.3?1:0)))));state.adl[p.id]={st:'done',when:nowStr,cg:a.cg,items};render();toast('Hasta yanıtı alındı · skor hesaplandı')});
+ $('#tReset')?.addEventListener('click',()=>{delete state.adl[p.id];render()})}
+
+/* --- 9. Notlar --- */
+SCREENS.notes=p=>head('Tedavi Değerlendirme Notları','Hekimin değerlendirme kararı ve takip hedefleri. Sistem içgörüleri burada hekim yorumuyla kapatılır veya ertelenir.')+ptBanner(p)+
+ `<div class="grid g-main">
+  <div class="card"><div class="card-h"><h2>Yeni değerlendirme notu</h2></div><div class="card-b" style="display:grid;gap:12px">
+   <div class="field"><label for="nType">Değerlendirme sonucu</label><select id="nType"><option>İzleme devam — tedavi değişikliği yok</option><option>Hasta ile görüşme planlandı</option><option>Tedavi planı güncellendi (hekim kararı)</option><option>İleri tedavi değerlendirmesi için yönlendirme</option><option>İçgörü yanlış pozitif olarak kapatıldı</option></select></div>
+   <div class="field"><label for="nGoal">Takip hedefi (hekim tanımlı)</label><input id="nGoal" placeholder="Örn. 4 hafta içinde doz sonu kötüleşme günü ≤ 3/14"></div>
+   <div class="field"><label for="nTxt">Not</label><textarea id="nTxt" placeholder="Klinik gözlem, hasta görüşmesi özeti, karar gerekçesi…"></textarea></div>
+   <div class="field"><label><input type="checkbox" id="nShare" style="accent-color:var(--accent)"> Notun sade özetini hastanın uygulamasında göster</label></div>
+   <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn primary" id="nSave">Notu kaydet</button></div></div></div>
+  <div class="card"><div class="card-h"><h2>Önceki notlar</h2></div><div class="card-b" style="display:grid;gap:10px" id="noteList">${(state.notes[state.pt]||[]).slice().reverse().map(n=>`<div class="note"><div class="m"><span class="num">${esc(n.d)}</span><span>${esc(n.a)}</span>${n.g?`<span>· hedef: ${esc(n.g)}</span>`:''}</div>${esc(n.t)}</div>`).join('')||'<p class="muted small">Kayıtlı not yok.</p>'}</div></div>
+ </div>`;
+POST.notes=p=>{$('#nSave').onclick=()=>{const t=$('#nTxt').value.trim();if(!t){toast('Not metni boş olamaz');return}(state.notes[state.pt]??=[]).push({d:`${fmtD(TODAY)} 2026`,a:'Dr. E. Sarıkaya',t:`${$('#nType').value}. ${t}`,g:$('#nGoal').value.trim()});render();toast('Not kaydedildi')}}
+
+/* --- 10. Karşılaştırma --- */
+SCREENS.compare=p=>{const all=p.days;const A=all.slice(0,14),B=all.slice(16,30);
+ const mm=w=>{const doses=w.flatMap(d=>d.doses);const high=w.reduce((a,d)=>a+d.motor.filter(v=>v>60).length,0);return{off:(high/w.length).toFixed(1),late:doses.filter(x=>x.status==='gecikti').length,unk:doses.filter(x=>x.status==='kayit-yok').length,avg:Math.round(w.flatMap(d=>d.motor).reduce((a,b)=>a+b,0)/w.flatMap(d=>d.motor).length),sleep:(w.reduce((a,d)=>a+d.sleepH,0)/w.length).toFixed(1),steps:Math.round(w.reduce((a,d)=>a+d.steps,0)/w.length),fog:w.reduce((a,d)=>a+d.fog.reduce((s,f)=>s+f.n,0),0),wear:Math.round(w.reduce((a,d)=>a+d.wear,0)/w.length)}};
+ const a=mm(A),b=mm(B);const row=(l,x,y,lowerBetter=true,fmt=v=>v)=>{const d=+y-+x;const cls=d===0?'':(lowerBetter?d<0:d>0)?'good':'bad';return `<span>${l}</span><span class="num">${fmt(x)}</span><span class="num">${fmt(y)}</span><span class="delta ${cls}">${d>0?'+':''}${Number.isInteger(d)?d:d.toFixed(1)}</span>`};
+ return head('Takip Karşılaştırması','İki dönemin yan yana özeti. Dönem A: önceki 14 gün (referans). Dönem B: son 14 gün. Değişimler gözlemseldir ve veri güvenilirliğiyle birlikte okunmalıdır.')+ptBanner(p)+
+ `<div class="grid g-main"><div class="card"><div class="card-h"><h2>Dönem A → Dönem B</h2><div class="sp"></div><span class="small muted">${fmtD(A[0].date)}–${fmtD(A[13].date)} → ${fmtD(B[0].date)}–${fmtD(B[13].date)}</span></div><div class="card-b"><div class="cmp"><b>Ölçüt</b><b>A</b><b>B</b><b>Δ</b>
+  ${row('OFF benzeri saat / gün',a.off,b.off)}${row('Ortalama motor yük',a.avg,b.avg)}${row('Gecikmiş doz',a.late,b.late)}${row('Kayıt olmayan doz',a.unk,b.unk)}${p.fog?row('FoG epizodu',a.fog,b.fog):''}${row('Uyku (sa)',a.sleep,b.sleep,false)}${row('Adım / gün',a.steps,b.steps,false,v=>Number(v).toLocaleString('tr-TR'))}${row('Saat takılma (%)',a.wear,b.wear,false)}
+  </div><p class="small muted" style="margin-top:12px">Yeşil: olumlu yönde değişim; turuncu: olumsuz yönde. Tek bir dönem karşılaştırması tedavi etkisini kanıtlamaz; mevsim, aktivite ve veri kapsamı farkları eş zamanlı değerlendirilmelidir.</p></div></div>
+  <div class="card"><div class="card-h"><h2>Tedavi değişikliği öncesi / sonrası</h2></div><div class="card-b small" style="display:grid;gap:8px">${p.id==='D-4125'?`<p><b>30 Tem 2026:</b> Entakapon eklendi.</p><p>12 haftalık izlemde doz sonu kötüleşme günleri azaldı; diskinezi göstergesi hafif arttı (PKG DKS ortalaması 4.1 → 5.6, Company-reported ölçek). Randevuda değerlendirilecek.</p>`:`<p class="muted">Bu dönemde kayıtlı tedavi değişikliği yok. Hekim planı güncellediğinde bu bölüm değişiklik tarihini referans alarak otomatik bölünür.</p>`}</div></div></div>
+ <div class="card"><div class="card-h"><h2>Saatlik ortalama profil · A vs B</h2></div><div class="card-b chart-wrap" id="cmpHost"></div></div>`}
+POST.compare=p=>{const all=p.days;const A=all.slice(0,14),B=all.slice(16,30);const prof=w=>Array.from({length:18},(_,h)=>Math.round(w.reduce((a,d)=>a+d.motor[h],0)/w.length));const pa=prof(A),pb=prof(B);
+ const W=760,H=220,pl=34,pr=16,pt=14,pb_=30;const x=h=>pl+h*(W-pl-pr)/17,y=v=>pt+(100-v)*(H-pt-pb_)/100;
+ const ln=(arr,c,dash)=>`<path d="${arr.map((v,i)=>`${i?'L':'M'}${x(i)},${y(v)}`).join(' ')}" fill="none" stroke="${c}" stroke-width="2" ${dash?`stroke-dasharray="${dash}"`:''}/>`+arr.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${c}" stroke="var(--surface)" stroke-width="1.5" data-tip="${String(i+6).padStart(2,'0')}:00|${c.includes('muted')?'Dönem A':'Dönem B'}: ${v}"/>`).join('');
+ $('#cmpHost').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:480px;display:block">${[0,25,50,75,100].map(g=>`<line x1="${pl}" x2="${W-pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(g)+4}" text-anchor="end">${g}</text>`).join('')}
+ ${SCHED.slice(0,p.dosesPerDay).map(t=>`<line x1="${x(t/60-6)}" x2="${x(t/60-6)}" y1="${pt}" y2="${H-pb_}" stroke="var(--line-strong)" stroke-dasharray="2 3"/><text x="${x(t/60-6)}" y="${H-pb_+13}" text-anchor="middle">${hhmm(t)}</text>`).join('')}
+ ${ln(pa,'var(--muted)','5 3')}${ln(pb,'var(--accent)')}</svg><div class="legend" style="margin-top:8px"><span><i style="background:var(--muted)"></i>Dönem A (referans)</span><span><i style="background:var(--accent)"></i>Dönem B (son 14 gün)</span><span class="muted">kesikli dikey çizgiler: planlı dozlar</span></div>`}
+
+/* --- 11. Rapor --- */
+SCREENS.report=p=>{const m=metrics(p);const a=state.adl[p.id];const ins=insightsFor(p)[0];
+ return head('Klinik Rapor','Hekim onayıyla üretilen, PDF/EHR dışa aktarımına uygun yapılandırılmış özet. Taslak; hekim düzenleyip onaylar.',`<button class="btn" id="rCopy">Metni kopyala</button><button class="btn primary" id="rApprove">Onayla ve kaydet</button>`)+
+ `<div class="card"><div class="card-b report" id="reportBody">
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px"><div><div class="eyebrow">PDwise Clinical · Dönem raporu</div><div style="font-family:var(--display);font-size:18px;font-weight:600">Hasta ${esc(p.id)}</div><div class="small muted">${p.age} yaş · ${p.sex} · Tanı ${p.dx} · H&Y ${p.hy} · Rapor tarihi 25 Eki 2026 · Dönem: son ${state.range} gün</div></div><div class="small muted" style="text-align:right">Hazırlayan: sistem (rules-v0.3)<br>Onay: <b>Bekliyor</b></div></div>
+  <h3>Veri kaynakları ve güvenilirlik</h3><p>Apple Watch sürekli izlem (ortalama takılma %${m.wear})${m.pkgDays?`; PKG 7 günlük klinik izlem (${m.pkgDays} gün bu dönemde)`:''}${m.statDays?`; STAT-ON 7 günlük yürüyüş izlemi (${m.statDays} gün)`:''}; hasta ilaç kaydı (${m.doses} planlı doz, ${m.unk} kayıtsız); ${m.emaN} hedefli hasta bildirimi. Bileşik güvenilirlik ${m.reliability}/100.</p>
+  <h3>Gözlenen örüntü</h3><p>${esc(ins.title)}. ${esc(ins.period)}. Sensör tahminine göre günlük OFF benzeri süre ${m.offHoursPerDay} saat; ${m.wearOffDays} günde planlanan sonraki dozdan önce motor yük eşiği aşıldı. ${m.late} gecikmiş, ${m.miss} atlanmış doz bildirimi mevcut. Diğer günlerde ilaç alımı bağımsız olarak doğrulanmamıştır.</p>
+  <h3>İlaç kullanımı</h3><p>Hekim onaylı plan: ${esc(p.meds)}. Kayıtlar hasta beyanıdır; alım kaydı ilacın etkisini göstermez.</p>
+  <h3>Hasta bildirimli sonuç (ADL)</h3><p>${a?.st==='done'?`PDQ-39 ADL alt ölçeği ${adlScore(a.items)}/100 (${a.when})${p.adlPrev?`; önceki ${adlScore(p.adlPrev.items)} (${p.adlPrev.date})`:''}.`:p.adlPrev?`Son PDQ-39 ADL ${adlScore(p.adlPrev.items)}/100 (${p.adlPrev.date}); bu dönemde yeni ölçüm yok.`:'Bu dönemde ADL ölçümü yok.'}</p>
+  <h3>Olası ve alternatif açıklamalar</h3><ul>${ins.explain.map(e=>`<li>${esc(e)}</li>`).join('')}</ul><p class="small muted">Alternatif: ${ins.alt.map(esc).join('; ')}.</p>
+  <h3>Belirsizlikler</h3><ul>${ins.unc.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>
+  <h3>Hekim değerlendirmesine sunulan noktalar</h3><ul>${ins.points.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>
+  <h3>Hekim notu</h3><p class="muted">${(state.notes[state.pt]||[]).slice(-1)[0]?.t?esc((state.notes[state.pt]||[]).slice(-1)[0].t):'(onay sırasında eklenir)'}</p>
+  <p class="foot-ai">Bu rapor sensör ve hasta bildirimi örüntülerinin istatistiksel özetidir; tanı koymaz, doz veya tedavi önermez. Nedensellik iddiası içermez. Klinik karar ve sorumluluk hekime aittir. Rapor hekim onayı olmadan hasta veya üçüncü taraflarla paylaşılmaz.</p>
+ </div></div>`}
+POST.report=()=>{$('#rCopy').onclick=()=>{const t=$('#reportBody').innerText;navigator.clipboard?.writeText(t).then(()=>toast('Rapor metni panoya kopyalandı')).catch(()=>{const r=document.createRange();r.selectNodeContents($('#reportBody'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Metin seçildi · kopyalamak için Ctrl/Cmd+C')})};$('#rApprove').onclick=()=>toast('Rapor hekim onayıyla kaydedildi (demo)')}
+
+/* --- 12. Uyarılar --- */
+SCREENS.alerts=()=>head('Uyarı İnceleme ve Çözüm','Sistem uyarıları açıklanabilir ve kapatılabilir. Her kapatma modelin yanlış pozitif izlemine geri bildirim olarak işlenir. Acil tıbbi durum tespiti bu sistemin kullanım amacı değildir.')+
+ `<div class="card"><div class="card-h"><h2>Uyarılar</h2><div class="sp"></div><div class="seg" id="alertFilter"><button data-f="open" aria-pressed="true">Açık</button><button data-f="deferred" aria-pressed="false">Ertelenen</button><button data-f="all" aria-pressed="false">Tümü</button></div></div><div class="card-b" id="alertList" style="padding-top:4px"></div></div>`;
+function drawAlerts(f='open'){const list=state.alerts.filter(a=>f==='all'||a.st===f);$('#alertList').innerHTML=list.map(a=>`<div class="alert-row ${a.st==='resolved'?'done':''}"><div class="sev ${a.sev}"></div><div><div class="small muted"><button class="btn ghost sm" data-pt="${a.pt}" data-go="overview" style="padding:0 4px 0 0">${esc(PATIENTS[a.pt].id)}</button>· ${esc(a.when)} · ${{eval:'Değerlendirme öneriliyor',new:'Yeni örüntü',data:'Veri yetersiz',due:'Planlı takip'}[a.sev]}${a.st!=='open'?` · <b>${a.st==='deferred'?'Ertelendi':'Kapatıldı'}${a.reason?': '+esc(a.reason):''}</b>`:''}</div><b>${esc(a.t)}</b><p class="small" style="margin-top:2px;color:var(--fg-2)">${esc(a.d)}</p></div>
+ <div class="act">${a.st==='open'?`<button class="btn sm" data-pt="${a.pt}" data-go="insights">İncele</button><button class="btn sm" data-al="${a.id}:defer">7 gün ertele</button><button class="btn sm" data-al="${a.id}:fp">Yanlış pozitif</button><button class="btn sm primary" data-al="${a.id}:resolve">Değerlendirildi</button>`:`<button class="btn sm" data-al="${a.id}:reopen">Yeniden aç</button>`}</div></div>`).join('')||'<p class="muted small">Bu filtrede uyarı yok.</p>'}
+POST.alerts=()=>{let f='open';drawAlerts(f);$('#alertFilter').onclick=e=>{const b=e.target.closest('button');if(!b)return;f=b.dataset.f;$$('#alertFilter button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawAlerts(f)};
+ $('#alertList').addEventListener('click',e=>{const b=e.target.closest('[data-al]');if(!b)return;const [id,act]=b.dataset.al.split(':');const a=state.alerts.find(x=>x.id===+id);
+  if(act==='defer'){a.st='deferred';a.reason='7 gün';toast('Uyarı 7 gün ertelendi')}else if(act==='fp'){a.st='resolved';a.reason='yanlış pozitif';toast('Yanlış pozitif olarak kapatıldı · modele geri bildirildi')}else if(act==='resolve'){a.st='resolved';a.reason='hekim değerlendirdi';toast('Uyarı kapatıldı')}else{a.st='open';a.reason='';toast('Uyarı yeniden açıldı')}
+  renderNav();drawAlerts(f)})}
+
+/* ---------- olaylar ---------- */
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){if(g.dataset.pt!=null)state.pt=+g.dataset.pt;state.view=g.dataset.go;state.selDay=null;closeRail();render();return}
+ const n=e.target.closest('.nav-btn');if(n){state.view=n.dataset.view;state.selDay=null;closeRail();render()}});
+$('#ptSel').onchange=e=>{state.pt=+e.target.value;state.selDay=null;if(['dashboard','priority','alerts'].includes(state.view))state.view='overview';render()};
+$('#rangeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;state.range=+b.dataset.r;state.selDay=null;render()};
+function closeRail(){$('#rail').classList.remove('open');$('#scrim').hidden=true}
+$('#menuBtn').onclick=()=>{$('#rail').classList.toggle('open');$('#scrim').hidden=!$('#rail').classList.contains('open')};
+$('#scrim').onclick=closeRail;
+// tooltip
+const tip=$('#tip');
+document.addEventListener('pointermove',e=>{const t=e.target.closest?.('[data-tip]');if(!t){tip.hidden=true;return}const [h,b]=t.dataset.tip.split('|');tip.innerHTML=`<b>${esc(h)}</b>${esc(b||'')}`;tip.hidden=false;const r=tip.getBoundingClientRect();let x=e.clientX+12,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-12;if(y+r.height>innerHeight-8)y=e.clientY-r.height-12;tip.style.left=x+'px';tip.style.top=y+'px'});
+render();
+</script>
+
+</body></html>

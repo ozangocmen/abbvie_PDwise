@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDwise Care</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: desktop'ta ortalanmış 390px telefon çerçevesi, telefonda tam ekran. Hasta ve bakım veren profilleri aynı kabukta, farklı sekme setleriyle. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#EDF0F4; --line:#D7DDE5; --line-strong:#AEB8C5;
+  --fg:#17212B; --fg-2:#4A5666; --muted:#6B7886;
+  --accent:#2E5A86; --accent-fg:#FFFFFF; --accent-soft:#E3ECF6;
+  --good:#1F7A4D; --good-soft:#E1F3E8; --warn:#9A6B12; --warn-soft:#FBF0D5; --serious:#B4471B; --serious-soft:#FCE6DA;
+  --aw:#2F6DB5; --pkg:#C2662A; --stat:#1F8F7A;
+  --m0:#F0E6D6; --m1:#E6C9A0; --m2:#D9A66A; --m3:#C27F3C; --m4:#935725;
+  --frame:#1B2430; --frame-shadow:0 30px 80px rgba(23,33,43,.35);
+  --display:"Red Hat Display",system-ui,sans-serif; --text:"Red Hat Text",system-ui,sans-serif; --mono:"Red Hat Mono",ui-monospace,Menlo,monospace;
+  --fs:17px; --target:52px;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0F151C; --surface:#161E27; --surface-2:#1E2833; --line:#2A3542; --line-strong:#4A5868;
+  --fg:#E7ECF1; --fg-2:#B5C0CC; --muted:#8F9BA8;
+  --accent:#7FA8D6; --accent-fg:#0F151C; --accent-soft:#1F2F42;
+  --good:#5CC48E; --good-soft:#163426; --warn:#E0B04A; --warn-soft:#3A2E12; --serious:#F08A5A; --serious-soft:#3F2416;
+  --aw:#5A8FD8; --pkg:#C97638; --stat:#2FA488;
+  --m0:#2A2A2A; --m1:#4A3A2A; --m2:#7A5530; --m3:#B07234; --m4:#E0A05A;
+  --frame:#000; --frame-shadow:0 30px 80px rgba(0,0,0,.6); color-scheme:dark}}
+html[data-contrast="high"]{--fg:#000;--fg-2:#111;--muted:#333;--line:#777;--line-strong:#333;--accent:#003A70;--surface-2:#E8E8E8}
+@media (prefers-color-scheme: dark){html[data-contrast="high"]{--fg:#fff;--fg-2:#eee;--muted:#ccc;--line:#888;--line-strong:#bbb;--accent:#A9CCF5;--surface-2:#2A2A2A}}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:var(--fs)/1.5 var(--text);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:1.5em;font-weight:700}h2{font-size:1.15em;font-weight:600}h3{font-size:1em;font-weight:600}
+p{margin:0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}.small{font-size:.85em}
+.eyebrow{font-size:.72em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* masaüstü sahnesi */
+.stage{min-height:100%;display:flex;flex-direction:column;align-items:center;gap:16px;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.stage-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;font-size:14px;color:var(--fg-2)}
+.stage-bar .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.stage-bar .seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-weight:600;color:var(--fg-2)}
+.stage-bar .seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.stage-bar .seg button+button{border-left:1px solid var(--line)}
+.phone{width:390px;height:844px;max-width:100%;background:var(--frame);border-radius:48px;padding:12px;box-shadow:var(--frame-shadow);flex:none}
+.screen-shell{background:var(--surface);border-radius:38px;height:100%;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px 0 32px;font-family:var(--mono);font-size:14px;font-weight:500;flex:none}
+.status .notch{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:120px;height:32px;background:var(--frame);border-radius:20px}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 20px 24px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+.tabbar{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-top:1px solid var(--line);padding:6px 6px 14px;background:var(--surface)}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;color:var(--muted);font-size:.7em;font-weight:600;cursor:pointer;min-height:var(--target)}
+.tabbar button[aria-current="page"]{color:var(--accent)}
+.tabbar svg{width:24px;height:24px}
+@media (max-width:460px){.stage{padding:0}.stage-bar{display:none}.phone{width:100%;height:100%;border-radius:0;padding:0;box-shadow:none}.screen-shell{border-radius:0}.status .notch{display:none}.status{padding-top:env(safe-area-inset-top,0px);height:auto;min-height:34px}.tabbar{padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}}
+
+/* bileşenler */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card.soft{background:var(--surface-2);border-color:transparent}
+.card.accent{background:var(--accent-soft);border-color:transparent}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:var(--target);border:1.5px solid var(--line-strong);background:var(--surface);border-radius:14px;padding:10px 16px;cursor:pointer;font-weight:600;color:var(--fg);width:100%;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.good{background:var(--good);border-color:var(--good);color:#fff}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--accent)}
+.btn.sm{min-height:40px;padding:6px 12px;font-size:.9em;border-radius:10px;width:auto}
+.btn:focus-visible,.tabbar button:focus-visible,input:focus-visible,.opt:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;align-items:center;gap:12px}
+.row .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.8em;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--good-soft);color:var(--good)}.pill.late{background:var(--warn-soft);color:var(--warn)}.pill.miss{background:var(--serious-soft);color:var(--serious)}.pill.wait{background:var(--surface-2);color:var(--muted)}.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.dose{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.dose:last-child{border-bottom:0}
+.dose .t{font-family:var(--mono);font-size:1.05em;font-weight:500}
+.dose .d{font-size:.85em;color:var(--muted)}
+.opt{display:flex;align-items:center;gap:12px;min-height:var(--target);border:1.5px solid var(--line-strong);border-radius:14px;padding:10px 14px;cursor:pointer;background:var(--surface);width:100%;text-align:left;font-weight:500}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.opt .r{width:22px;height:22px;border-radius:50%;border:2px solid var(--line-strong);flex:none;display:grid;place-items:center}
+.opt[aria-pressed="true"] .r{border-color:var(--accent)}.opt[aria-pressed="true"] .r::after{content:"";width:11px;height:11px;border-radius:50%;background:var(--accent)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--target);padding:8px 0;border-bottom:1px solid var(--line)}
+.toggle:last-child{border-bottom:0}
+.toggle .l{display:flex;flex-direction:column}.toggle .l span{font-size:.8em;color:var(--muted)}
+.sw{width:54px;height:32px;border-radius:16px;background:var(--line-strong);border:0;position:relative;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .15s}
+.sw[aria-checked="true"]{background:var(--accent)}.sw[aria-checked="true"]::after{left:25px}
+.progress{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}.progress i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.hours{display:grid;grid-template-columns:repeat(18,1fr);gap:2px}
+.hours i{height:28px;border-radius:4px;display:block}
+.hours-l{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.7em;color:var(--muted)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:110px}
+.week div{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.week i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:var(--aw)}
+.week span{font-family:var(--mono);font-size:.7em;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8em;font-weight:600;border-radius:8px;padding:3px 9px;background:var(--surface-2);color:var(--fg-2)}
+.chip i{width:9px;height:9px;border-radius:2px;display:inline-block}.chip.aw i{background:var(--aw)}.chip.pkg i{background:var(--pkg)}.chip.stat i{background:var(--stat)}
+.notice{display:flex;gap:10px;border-radius:12px;padding:12px;font-size:.9em;background:var(--accent-soft)}
+.notice.warn{background:var(--warn-soft)}.notice.good{background:var(--good-soft)}
+.notice svg{flex:none;width:20px;height:20px;margin-top:2px}
+.hero-ic{width:72px;height:72px;border-radius:22px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:6px}
+.hero-ic svg{width:36px;height:36px}
+.field{display:flex;flex-direction:column;gap:6px}.field label{font-weight:600;font-size:.9em;color:var(--fg-2)}
+.field input,.field select,.field textarea{min-height:var(--target);border:1.5px solid var(--line-strong);border-radius:12px;padding:10px 14px;background:var(--surface);width:100%}
+.field textarea{min-height:90px}
+.code{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.code span{height:56px;border:1.5px solid var(--line-strong);border-radius:12px;display:grid;place-items:center;font-family:var(--mono);font-size:1.3em;font-weight:500}
+.sheet{position:absolute;inset:0;background:rgba(10,16,24,.45);display:flex;align-items:flex-end;z-index:20}
+.sheet>div{background:var(--surface);border-radius:28px 28px 0 0;padding:18px 20px calc(24px + env(safe-area-inset-bottom,0px));width:100%;display:flex;flex-direction:column;gap:12px;max-height:88%;overflow:auto}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line-strong);margin:0 auto 4px}
+.toast{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.9em;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+.ring{width:84px;height:84px;flex:none}
+.ring text{font-family:var(--mono);font-size:22px;fill:var(--fg);font-weight:500}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.9em}.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:500}
+.list{display:flex;flex-direction:column}
+.list>button,.list>div{display:flex;align-items:center;gap:12px;min-height:var(--target);padding:10px 0;border-bottom:1px solid var(--line);border-left:0;border-right:0;border-top:0;background:none;text-align:left;width:100%;cursor:pointer;font-weight:500}
+.list>*:last-child{border-bottom:0}
+.list .ic{width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;flex:none;color:var(--fg-2)}
+.list .ic svg{width:20px;height:20px}
+.list .chev{margin-left:auto;color:var(--muted)}
+.likert-q{display:flex;flex-direction:column;gap:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+html[data-motion="reduce"] *{transition:none!important}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="stage-bar">
+    <span class="eyebrow">Profil</span>
+    <div class="seg" id="roleSeg"><button data-role="patient" aria-pressed="true">Hasta</button><button data-role="caregiver" aria-pressed="false">Bakım veren</button></div>
+    <button class="btn sm" id="restartBtn">Baştan başla (onboarding)</button>
+    <span class="small muted">Sentetik demo verisi · PDwise Care prototipi v0.3</span>
+  </div>
+  <div class="phone"><div class="screen-shell" id="shell">
+    <div class="status"><span class="notch"></span><span id="clock">10:53</span><span>●●●● ᯤ ▮</span></div>
+    <div class="scroll" id="scroll"></div>
+    <div class="tabbar" id="tabbar"></div>
+    <div class="toast" id="toast"></div>
+    <div id="sheetHost"></div>
+  </div></div>
+</div>
+
+<script>
+/* ---- yardımcılar ---- */
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const hhmm=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(Math.round(m%60)).padStart(2,'0')}`;
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400)}
+const NOW=10*60+53; // demo saat 10:53
+const DAYS=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+const I={ // ikonlar
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>',
+ pill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="8.5" width="18" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M8.5 15.5l7-7"/></svg>',
+ chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 5-7 4 4"/></svg>',
+ share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+ heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+ watch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 6V3h6v3M9 18v3h6v-3M12 10v2l1.5 1.5"/></svg>',
+ info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
+ chev:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>',
+ lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+ clip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg>',
+ bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"/></svg>',
+ moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+};
+
+/* ---- sentetik veri (kurgusal hasta "Ahmet", bakım veren "Ayşe") ---- */
+const r=rng(1042);
+const SCHED=[8*60,12*60,16*60,20*60];
+const MEDS=[{n:'Levodopa/Karbidopa 100/25 mg',times:SCHED},{n:'Pramipeksol ER 1.5 mg',times:[8*60]}];
+const state={role:'patient',onboard:true,step:0,tab:'home',
+ patient:{name:'Ahmet',id:'A-1042',doctor:'Dr. Elif Sarıkaya',nextVisit:'12 Kasım 2026'},caregiver:{name:'Ayşe',rel:'eş'},
+ doses:[{t:SCHED[0],st:'alindi',at:8*60+6},{t:SCHED[1],st:'bekliyor',at:null},{t:SCHED[2],st:'bekliyor',at:null},{t:SCHED[3],st:'bekliyor',at:null}],
+ today:Array.from({length:18},(_,h)=>{const hour=h+6;let v=34+(r()-.5)*10;if(hour>=9&&hour<=10)v-=16;if(hour>=11&&hour<12)v+=22;return Math.round(Math.max(10,Math.min(95,v)))}),
+ week:[2.1,3.4,1.8,2.9,3.6,1.2,1.9],weekLate:[0,1,0,1,2,0,0],
+ ema:{pending:true,q:'Şu anda hareket etmekte zorlanıyor musunuz?',sentToday:1,max:2,answered:[]},
+ adl:{assigned:true,done:false,i:0,ans:[],assist:false,later:false},
+ share:{doctor:true,scopes:{meds:true,motor:true,reports:true,adl:true,nonmotor:false}},
+ cg:{invited:true,perms:{doses:true,missed:true,motor:false,reports:false,adlAssist:true,nonmotor:false},notify:{missed60:true,weekly:true,quiet:true}},
+ settings:{fs:'normal',contrast:false,motion:false,maxNotif:2,quiet:'22:00–08:00',wear:true},
+ devices:{aw:{on:true,wear:88,battery:62,sync:'10:49'},clinical:{type:'PKG',day:4,of:7,until:'28 Eki'}},
+ nonmotor:{sleep:null,fatigue:null},
+};
+// "today" sadece 06–11 arası gerçekleşmiş sayılır (saat 10:53)
+const TODAY_H=Math.floor(NOW/60)-6;
+
+/* ---- kabuk ---- */
+const TABS={patient:[{id:'home',t:'Bugün',ic:I.home},{id:'meds',t:'İlaçlar',ic:I.pill},{id:'track',t:'Takip',ic:I.chart},{id:'share',t:'Paylaşım',ic:I.share},{id:'settings',t:'Ayarlar',ic:I.gear}],
+ caregiver:[{id:'cg-home',t:'Bugün',ic:I.heart},{id:'cg-meds',t:'İlaçlar',ic:I.pill},{id:'cg-notify',t:'Bildirim',ic:I.bell},{id:'cg-perms',t:'İzinler',ic:I.lock}]};
+function render(){
+ const shell=$('#shell');const sc=$('#scroll');
+ const tabs=$('#tabbar');
+ if(state.onboard){tabs.hidden=true;sc.innerHTML=ONB[state.role][state.step]()}
+ else{tabs.hidden=false;tabs.innerHTML=TABS[state.role].map(t=>`<button data-tab="${t.id}" ${state.tab===t.id?'aria-current="page"':''}>${t.ic}<span>${t.t}</span></button>`).join('');sc.innerHTML=(VIEWS[state.tab]||VIEWS.home)()}
+ sc.scrollTop=0;
+ document.documentElement.style.setProperty('--fs',{normal:'17px',large:'19px',xl:'22px'}[state.settings.fs]);
+ document.documentElement.dataset.contrast=state.settings.contrast?'high':'';document.documentElement.dataset.motion=state.settings.motion?'reduce':'';
+}
+function go(tab){state.tab=tab;render()}
+function sheet(html){$('#sheetHost').innerHTML=`<div class="sheet" id="sheet"><div><div class="grab"></div>${html}</div></div>`;$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()})}
+function closeSheet(){$('#sheetHost').innerHTML=''}
+const motorColor=v=>v<30?'var(--m0)':v<45?'var(--m1)':v<60?'var(--m2)':v<75?'var(--m3)':'var(--m4)';
+const motorWord=v=>v<30?'rahat':v<45?'iyi':v<60?'orta':v<75?'zorlandım':'çok zorlandım';
+const doseStatus=d=>d.st==='alindi'?`<span class="pill ok">Alındı ${hhmm(d.at)}</span>`:d.st==='gecikti'?`<span class="pill late">Geç alındı ${hhmm(d.at)}</span>`:d.st==='atlandi'?`<span class="pill miss">Atlandı</span>`:d.t<NOW?`<span class="pill late">Planlanan saat geçti</span>`:`<span class="pill wait">Planlandı</span>`;
+
+/* ---- ONBOARDING ---- */
+const ONB={patient:[
+ ()=>`<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;text-align:center;padding-top:40px">
+  <div class="hero-ic" style="margin:0 auto 10px;width:88px;height:88px;border-radius:28px;font-family:var(--display);font-weight:700;font-size:28px;background:var(--accent);color:var(--accent-fg)">PD</div>
+  <h1>PDwise Care'e hoş geldiniz</h1><p class="muted">Günlük yaşamınızdaki değişimleri hekiminizle birlikte daha iyi anlamanıza yardımcı olur. Sizi değerlendirmez; yalnızca kayıt tutar ve sorar.</p>
+  <div style="flex:1"></div>
+  <p class="small muted">Bu uygulama tıbbi acil durum izlemi yapmaz. Acil durumda 112'yi arayın.</p>
+  <button class="btn primary" data-next>Başlayalım</button><button class="btn quiet" data-role-go="caregiver">Bakım veren olarak katılıyorum</button></div>`,
+ ()=>`<div class="hero-ic">${I.lock}</div><h1>Verileriniz size ait</h1><p class="muted">Hangi bilgilerin toplanacağını ve kimin görebileceğini siz seçersiniz. İstediğiniz zaman değiştirebilirsiniz.</p>
+  <div class="card"><div class="toggle"><div class="l">İlaç kayıtlarım<span>Aldım / geç aldım / atladım bildirimleri</span></div><button class="sw" aria-checked="true" data-sw="share.scopes.meds"></button></div>
+  <div class="toggle"><div class="l">Hareket verilerim<span>Akıllı saatimden gelen tremor ve hareket özetleri</span></div><button class="sw" aria-checked="true" data-sw="share.scopes.motor"></button></div>
+  <div class="toggle"><div class="l">Kısa sorulara yanıtlarım<span>Günde en fazla 2 soru</span></div><button class="sw" aria-checked="true" data-sw="share.scopes.reports"></button></div>
+  <div class="toggle"><div class="l">Uyku ve yorgunluk notlarım<span>İsteğe bağlı</span></div><button class="sw" aria-checked="false" data-sw="share.scopes.nonmotor"></button></div></div>
+  <div class="notice">${I.info}<span>Verileriniz KVKK kapsamında özel nitelikli sağlık verisidir; yalnızca açık rızanızla ve seçtiğiniz kapsamda hekiminizle paylaşılır. Reklam veya üçüncü taraflarla paylaşılmaz.</span></div>
+  <button class="btn primary" data-next>Kabul ediyorum, devam</button><button class="btn quiet" data-sheet="consent">Aydınlatma metnini oku</button>`,
+ ()=>`<div class="hero-ic">${I.watch}</div><h1>Cihazınızı bağlayın</h1><p class="muted">Akıllı saatiniz hareketlerinizi arka planda kaydeder. Hiçbir şey yazmanız gerekmez.</p>
+  <div class="card"><div class="row"><span class="chip aw"><i></i>Apple Watch</span><span class="sp"></span>${state.devices.aw.on?'<span class="pill ok">Bağlı</span>':'<button class="btn sm primary" data-connect>Bağla</button>'}</div><p class="small muted">Apple Health üzerinden hareket bozukluğu ölçümleri, adım ve uyku okunur. Konum okunmaz.</p></div>
+  <div class="card soft"><div class="row"><span class="chip pkg"><i></i>Aktif klinik izlem cihazı</span></div><p><b>PKG bilek sensörü</b> · Dr. Sarıkaya tarafından 7 günlüğüne verildi · ${state.devices.clinical.day}. gün</p><p class="small muted">Bu cihazın verisi doğrudan kliniğe gider; burada yalnızca takılı olduğunu görürsünüz. ${state.devices.clinical.until} tarihinde kliniğe iade edilecek.</p></div>
+  <button class="btn primary" data-next>Devam</button><button class="btn quiet" data-next>Saatim yok, şimdilik atla</button>`,
+ ()=>`<div class="hero-ic">${I.pill}</div><h1>İlaç planınız</h1><p class="muted">Hekiminizin kaydettiği plan. Değişiklik yalnızca hekiminiz tarafından yapılır; saatlerinizi size uyacak şekilde ayarlayabilirsiniz.</p>
+  ${MEDS.map(m=>`<div class="card"><b>${m.n}</b><div class="row" style="flex-wrap:wrap;gap:8px">${m.times.map(t=>`<span class="chip num">${hhmm(t)}</span>`).join('')}</div></div>`).join('')}
+  <div class="card soft"><div class="toggle"><div class="l">Hatırlatma<span>Planlanan saatte, sessiz bildirim</span></div><button class="sw" aria-checked="true"></button></div><div class="toggle"><div class="l">Sessiz saatler<span>${state.settings.quiet}</span></div><button class="sw" aria-checked="true"></button></div></div>
+  <button class="btn primary" data-finish>Hazırım</button>`],
+ caregiver:[
+ ()=>`<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;text-align:center;padding-top:40px"><div class="hero-ic" style="margin:0 auto 10px">${I.heart}</div><h1>Bakım veren olarak katılın</h1><p class="muted">Yakınınızın size verdiği izinler ölçüsünde ilaç saatlerini görebilir ve gerektiğinde destek olabilirsiniz.</p><div style="flex:1"></div><button class="btn primary" data-next>Davet kodum var</button><button class="btn quiet" data-role-go="patient">Hasta olarak giriş yap</button></div>`,
+ ()=>`<h1>Davet kodu</h1><p class="muted">Yakınınızın uygulamasındaki <b>Paylaşım → Bakım veren</b> bölümünde oluşturulan 6 haneli kod.</p><div class="code"><span>7</span><span>K</span><span>4</span><span>M</span><span>2</span><span>P</span></div><div class="field"><label for="cgName">Adınız</label><input id="cgName" value="Ayşe"></div><div class="field"><label for="cgRel">Yakınlık</label><select id="cgRel"><option>Eş</option><option>Çocuk</option><option>Kardeş</option><option>Profesyonel bakıcı</option></select></div><button class="btn primary" data-next>Doğrula</button>`,
+ ()=>`<div class="hero-ic" style="background:var(--good-soft);color:var(--good)">${I.check}</div><h1>Ahmet sizi onayladı</h1><p class="muted">Görebilecekleriniz Ahmet'in verdiği izinlerle sınırlıdır. Ahmet bunları istediği zaman değiştirebilir.</p>
+  <div class="card">${Object.entries({doses:'Bugünün ilaç durumu',missed:'Gecikmiş veya atlanmış doz bildirimi',adlAssist:'Anket doldurmada yardım',motor:'Hareket verisi özeti',reports:'Hekim raporları',nonmotor:'Uyku ve yorgunluk notları'}).map(([k,l])=>`<div class="row" style="min-height:40px"><span style="color:${state.cg.perms[k]?'var(--good)':'var(--muted)'};width:24px">${state.cg.perms[k]?I.check:'—'}</span><span style="${state.cg.perms[k]?'':'color:var(--muted)'}">${l}</span></div>`).join('')}</div>
+  <div class="notice">${I.info}<span>Bu uygulama acil durum izlemi yapmaz ve sizi Ahmet'in hekimiyle doğrudan iletişime geçirmez. Tıbbi sorularınız için kliniği arayın.</span></div><button class="btn primary" data-finish>Devam</button>`]};
+
+/* ---- HASTA GÖRÜNÜMLERİ ---- */
+const VIEWS={};
+VIEWS.home=()=>{const next=state.doses.find(d=>d.st==='bekliyor');const taken=state.doses.filter(d=>d.st==='alindi'||d.st==='gecikti').length;
+ return `<div class="row" style="margin-top:6px"><div><div class="eyebrow">Pazar, 25 Ekim</div><h1>Günaydın, ${state.patient.name}</h1></div><span class="sp"></span><span class="chip aw" title="Apple Watch"><i></i>${state.devices.aw.on?'senkron '+state.devices.aw.sync:'bağlı değil'}</span></div>
+ ${next?`<div class="card accent"><div class="eyebrow">Sıradaki ilaç</div><div class="row"><span class="num" style="font-size:2em;font-weight:500;font-family:var(--mono)">${hhmm(next.t)}</span><div><b>Levodopa/Karbidopa</b><div class="small muted">${next.t-NOW>0?`${Math.round((next.t-NOW)/60*10)/10} saat sonra`:'planlanan saat geçti'}</div></div></div><div class="row" style="gap:8px"><button class="btn good" data-dose="${state.doses.indexOf(next)}:alindi">Aldım</button><button class="btn" data-dose-sheet="${state.doses.indexOf(next)}">Başka</button></div></div>`:`<div class="card good"><b>Bugünkü tüm ilaçlar kaydedildi.</b></div>`}
+ ${state.ema.pending?`<div class="card"><div class="row"><span class="eyebrow">Kısa soru · ${state.ema.sentToday}/${state.ema.max} bugün</span><span class="sp"></span><button class="btn sm quiet" data-ema-later>Daha sonra</button></div><h2>${state.ema.q}</h2><p class="small muted">Saatiniz 11:00 civarında hareketlerde bir değişim kaydetti. Nasıl hissettiğinizi bilmek kaydı anlamlı kılar.</p><div style="display:grid;gap:8px">${['Hayır, rahatım','Biraz','Evet, belirgin şekilde'].map(a=>`<button class="opt" data-ema="${a}"><span class="r"></span>${a}</button>`).join('')}</div></div>`:''}
+ ${state.adl.assigned&&!state.adl.done?`<div class="card"><div class="row"><div class="ic" style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;color:var(--fg-2)">${I.clip}</div><div><b>Hekiminizden kısa bir anket</b><div class="small muted">6 soru · yaklaşık 2 dakika · ${state.patient.nextVisit} randevusu için</div></div></div><p class="small">${state.patient.doctor}: "Günlük işlerdeki zorlukları randevuda birlikte değerlendirmek için."</p><button class="btn primary" data-go="adl">Ankete başla</button></div>`:state.adl.done?`<div class="notice good">${I.check}<span>Anketiniz ${state.patient.doctor}'ya iletildi. Teşekkürler.</span></div>`:''}
+ <div class="card"><div class="row"><h2>Bugün nasıl geçiyor</h2><span class="sp"></span><button class="btn sm quiet" data-go="track">Ayrıntı</button></div>
+  <div class="hours">${state.today.map((v,h)=>`<i style="background:${h<=TODAY_H?motorColor(v):'var(--surface-2)'}" title="${h+6}:00 ${h<=TODAY_H?motorWord(v):''}"></i>`).join('')}</div><div class="hours-l"><span>06</span><span>12</span><span>18</span><span>24</span></div>
+  <p class="small">09–10 arası rahat, 11'de hareket biraz zorlaşmış görünüyor. Bu bir ölçüm özetidir; nasıl hissettiğiniz esastır.</p></div>
+ <div class="card soft"><div class="row"><span class="num" style="font-size:1.4em;font-family:var(--mono)">${taken}/${state.doses.length}</span><div><b>İlaç kaydı</b><div class="small muted">Bugün · tümünü görmek için İlaçlar</div></div><span class="sp"></span><span class="chip pkg"><i></i>PKG ${state.devices.clinical.day}/7</span></div></div>
+ <div class="card"><div class="row"><h3>Akşam notu</h3><span class="sp"></span><span class="small muted">isteğe bağlı</span></div><div class="row" style="gap:8px"><button class="btn" data-nm="sleep">${state.nonmotor.sleep?'Uyku: '+state.nonmotor.sleep:'Uyku'}</button><button class="btn" data-nm="fatigue">${state.nonmotor.fatigue?'Yorgunluk: '+state.nonmotor.fatigue:'Yorgunluk'}</button></div></div>`};
+
+VIEWS.meds=()=>`<h1 style="margin-top:6px">İlaçlarım</h1>
+ <div class="card"><div class="eyebrow">Bugün</div>${state.doses.map((d,i)=>`<div class="dose"><span class="t">${hhmm(d.t)}</span><div><b>Levodopa/Karbidopa</b>${i===0?'<div class="d">+ Pramipeksol ER 1.5 mg</div>':''}<div class="d">${doseStatus(d)}</div></div>${d.st==='bekliyor'?`<button class="btn sm primary" data-dose="${i}:alindi">Aldım</button>`:`<button class="btn sm" data-dose-sheet="${i}">Düzelt</button>`}</div>`).join('')}</div>
+ <div class="card soft"><h3>Bu hafta</h3><div class="week" style="height:70px">${state.week.map((v,i)=>`<div><i style="height:${100-state.weekLate[i]*30}%;background:${state.weekLate[i]?'var(--warn)':'var(--good)'};opacity:.85"></i><span>${DAYS[i]}</span></div>`).join('')}</div><p class="small muted">Yeşil: planlandığı gibi · Sarı: geç alınan doz var. Bu bir puan değildir; hekiminizle konuşmak için bir hatırlatmadır.</p></div>
+ <div class="card"><h3>Planım</h3>${MEDS.map(m=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><b style="flex:1 1 100%">${m.n}</b>${m.times.map(t=>`<span class="chip num">${hhmm(t)}</span>`).join('')}</div>`).join('')}<p class="small muted">Plan ${state.patient.doctor} tarafından 11 Eylül 2026'da onaylandı. Dozu ve ilacı uygulama değiştirmez; yalnızca hekiminiz değiştirir.</p><button class="btn" data-sheet="times">Hatırlatma saatlerimi kaydır</button></div>`;
+
+VIEWS.track=()=>`<h1 style="margin-top:6px">Takip</h1>
+ <div class="card"><div class="row"><h2>Bugün</h2><span class="sp"></span><span class="chip aw"><i></i>takılı %${state.devices.aw.wear}</span></div><div class="hours">${state.today.map((v,h)=>`<i style="background:${h<=TODAY_H?motorColor(v):'var(--surface-2)'}"></i>`).join('')}</div><div class="hours-l"><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
+  <div class="row" style="gap:6px;flex-wrap:wrap;font-size:.8em;color:var(--muted)"><span>rahat</span>${['--m0','--m1','--m2','--m3','--m4'].map(c=>`<i style="width:18px;height:10px;border-radius:2px;background:var(${c});display:inline-block"></i>`).join('')}<span>çok zorlandım</span></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">${state.doses.map(d=>`<span class="chip num" style="${d.st==='bekliyor'?'opacity:.5':''}">${d.at?hhmm(d.at):hhmm(d.t)} ${d.st==='alindi'?'✓':d.st==='gecikti'?'geç':d.st==='atlandi'?'×':'plan'}</span>`).join('')}</div>
+  <p class="small muted">Renkler saatinizin hareket ölçümlerinden türetilmiştir; tanı veya tedavi değerlendirmesi değildir.</p></div>
+ <div class="card"><div class="row"><h2>Son 7 gün</h2><span class="sp"></span><span class="small muted">zorlanılan saat / gün</span></div><div class="week">${state.week.map((v,i)=>`<div><span class="num">${v}</span><i style="height:${v/4*100}%"></i><span>${DAYS[i]}</span></div>`).join('')}</div>
+  <p>Bu hafta öğleden sonraları daha sık zorlanma kaydedildi; geç alınan dozların olduğu iki günde biraz daha belirgin. ${state.patient.doctor} ile ${state.patient.nextVisit} randevusunda konuşabileceğiniz bir konu.</p><p class="small muted">Bu ilişki gözlemseldir; ilaçların etkisini kanıtlamaz. Hekiminiz değerlendirir.</p></div>
+ <div class="card soft"><h3>Klinik izlem cihazı</h3><div class="row"><span class="chip pkg"><i></i>PKG bilek sensörü</span><span class="sp"></span><span class="num">${state.devices.clinical.day}. gün / 7</span></div><div class="progress"><i style="width:${state.devices.clinical.day/7*100}%"></i></div><p class="small muted">Cihazı gün boyu takılı tutun; ${state.devices.clinical.until} tarihinde kliniğe iade edilecek. Verisi burada gösterilmez, doğrudan hekiminize gider.</p></div>
+ <div class="card"><h3>Uyku ve yorgunluk</h3><div class="row" style="gap:8px"><button class="btn" data-nm="sleep">${state.nonmotor.sleep?'Uyku: '+state.nonmotor.sleep:'Uyku nasıldı?'}</button><button class="btn" data-nm="fatigue">${state.nonmotor.fatigue?'Yorgunluk: '+state.nonmotor.fatigue:'Yorgunluk?'}</button></div><p class="small muted">Saat uykuyu ölçer, siz nasıl dinlendiğinizi bilirsiniz. İkisi birlikte daha anlamlıdır.</p></div>`;
+
+VIEWS.share=()=>`<h1 style="margin-top:6px">Paylaşım</h1>
+ <div class="card"><div class="row"><div class="ic" style="width:44px;height:44px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;font-family:var(--display)">ES</div><div><b>${state.patient.doctor}</b><div class="small muted">Hareket Bozuklukları Ünitesi</div></div><span class="sp"></span><button class="sw" aria-checked="${state.share.doctor}" data-sw="share.doctor"></button></div>
+  ${state.share.doctor?`<div class="toggle"><div class="l">İlaç kayıtlarım</div><button class="sw" aria-checked="${state.share.scopes.meds}" data-sw="share.scopes.meds"></button></div><div class="toggle"><div class="l">Hareket verilerim</div><button class="sw" aria-checked="${state.share.scopes.motor}" data-sw="share.scopes.motor"></button></div><div class="toggle"><div class="l">Soru yanıtlarım</div><button class="sw" aria-checked="${state.share.scopes.reports}" data-sw="share.scopes.reports"></button></div><div class="toggle"><div class="l">Anket sonuçlarım</div><button class="sw" aria-checked="${state.share.scopes.adl}" data-sw="share.scopes.adl"></button></div><div class="toggle"><div class="l">Uyku ve yorgunluk notlarım</div><button class="sw" aria-checked="${state.share.scopes.nonmotor}" data-sw="share.scopes.nonmotor"></button></div>`:'<p class="small muted">Paylaşım kapalı. Verileriniz yalnızca telefonunuzda kalır.</p>'}
+ </div>
+ <div class="card soft"><h3>Son erişimler</h3><div class="list"><div style="cursor:default"><div><b>14 günlük rapor görüntülendi</b><div class="small muted">${state.patient.doctor} · dün 18:05</div></div></div><div style="cursor:default"><div><b>Anket atandı (6 soru)</b><div class="small muted">${state.patient.doctor} · bugün 09:12</div></div></div></div></div>
+ <div class="card"><div class="row"><h3>Bakım veren</h3><span class="sp"></span>${state.cg.invited?'<span class="pill ok">Ayşe (eş)</span>':'<button class="btn sm primary" data-sheet="invite">Davet et</button>'}</div>
+  ${state.cg.invited?Object.entries({doses:'Bugünün ilaç durumunu görsün',missed:'Doz 60 dk gecikince bildirim alsın',adlAssist:'Anketlerde yardım edebilsin',motor:'Hareket özetimi görsün',reports:'Hekim raporlarımı görsün',nonmotor:'Uyku ve yorgunluk notlarımı görsün'}).map(([k,l])=>`<div class="toggle"><div class="l">${l}</div><button class="sw" aria-checked="${state.cg.perms[k]}" data-sw="cg.perms.${k}"></button></div>`).join('')+`<button class="btn quiet" data-cg-remove>Erişimi kaldır</button>`:'<p class="small muted">Bir yakınınız, sizin seçtiğiniz bilgileri görebilir. Ne göreceğini her zaman siz belirlersiniz.</p>'}</div>
+ <div class="notice">${I.lock}<span>Verileriniz araştırma veya ticari amaçla kimseyle paylaşılmaz. Dilediğinizde tüm verilerinizi indirebilir veya silebilirsiniz (Ayarlar → Veri ve gizlilik).</span></div>`;
+
+VIEWS.settings=()=>`<h1 style="margin-top:6px">Ayarlar</h1>
+ <div class="card"><h3>Görünüm ve erişilebilirlik</h3><div class="field"><label>Yazı boyutu</label><div class="row" style="gap:8px">${[['normal','Normal'],['large','Büyük'],['xl','Çok büyük']].map(([k,l])=>`<button class="opt" style="justify-content:center" aria-pressed="${state.settings.fs===k}" data-fs="${k}">${l}</button>`).join('')}</div></div>
+  <div class="toggle"><div class="l">Yüksek kontrast</div><button class="sw" aria-checked="${state.settings.contrast}" data-sw="settings.contrast"></button></div><div class="toggle"><div class="l">Hareketi azalt<span>Animasyonları kapatır</span></div><button class="sw" aria-checked="${state.settings.motion}" data-sw="settings.motion"></button></div></div>
+ <div class="card"><h3>Bildirimler</h3><div class="toggle"><div class="l">Günde en fazla soru<span>Hekiminiz daha fazlasını isteyemez</span></div><div class="row" style="gap:6px"><button class="btn sm" data-maxn="-1">−</button><span class="num" style="min-width:20px;text-align:center">${state.settings.maxNotif}</span><button class="btn sm" data-maxn="1">+</button></div></div><div class="toggle"><div class="l">Sessiz saatler<span>${state.settings.quiet}</span></div><button class="sw" aria-checked="true"></button></div><div class="toggle"><div class="l">Saati takma hatırlatması<span>Sabah bir kez</span></div><button class="sw" aria-checked="${state.settings.wear}" data-sw="settings.wear"></button></div></div>
+ <div class="card"><h3>Cihazlar</h3><div class="row"><span class="chip aw"><i></i>Apple Watch</span><span class="sp"></span><span class="small muted">pil %${state.devices.aw.battery} · ${state.devices.aw.sync}</span></div><div class="row"><span class="chip pkg"><i></i>PKG (klinik)</span><span class="sp"></span><span class="small muted">${state.devices.clinical.day}/7 gün</span></div></div>
+ <div class="card"><h3>Veri ve gizlilik</h3><div class="list"><button data-sheet="consent"><span class="ic">${I.lock}</span>Aydınlatma metni ve rızalarım<span class="chev">${I.chev}</span></button><button data-toast="Verileriniz hazırlanıyor; indirme bağlantısı e-posta ile gönderilecek (demo)"><span class="ic">${I.share}</span>Tüm verilerimi indir<span class="chev">${I.chev}</span></button><button data-sheet="delete"><span class="ic" style="color:var(--serious)">${I.info}</span>Hesabımı ve verilerimi sil<span class="chev">${I.chev}</span></button></div></div>
+ <p class="small muted" style="text-align:center">PDwise Care prototip v0.3 · Sentetik demo · Hasta ${state.patient.id}</p>`;
+
+/* ADL anketi (PDQ-39 ADL alt ölçeği — madde metinleri lisans sonrası eklenecek) */
+const ADL_ITEMS=['Ev içi günlük işler','Giyinme','Düğme ilikleme / bağcık bağlama','El yazısı','Yiyecek kesme','İçecek tutma, dökmeden'];
+const LIKERT=['Hiçbir zaman','Nadiren','Bazen','Sık sık','Her zaman'];
+VIEWS.adl=()=>{const a=state.adl;if(a.done)return `<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;text-align:center"><div class="hero-ic" style="margin:0 auto;background:var(--good-soft);color:var(--good)">${I.check}</div><h1>Teşekkürler</h1><p class="muted">Yanıtlarınız ${state.patient.doctor}'ya iletildi. Randevunuzda birlikte değerlendireceksiniz.</p><p class="small muted">Burada puan gösterilmez; anketler tek başına yorumlanmaz.</p><button class="btn primary" data-go="home">Bugüne dön</button></div>`;
+ if(a.i===-1)return `<button class="btn quiet" style="width:auto;justify-content:flex-start;padding-left:0" data-go="home">‹ Geri</button><div class="hero-ic">${I.clip}</div><h1>Günlük yaşam anketi</h1><p class="muted">Son <b>1 ayı</b> düşünerek yanıtlayın. Doğru ya da yanlış yanıt yoktur. İstediğiniz an bırakıp sonra devam edebilirsiniz.</p>
+  <div class="card soft"><div class="toggle"><div class="l">Ayşe ile birlikte dolduruyorum<span>Bakım veren yardımı · yanıt yine sizindir</span></div><button class="sw" aria-checked="${a.assist}" data-sw="adl.assist"></button></div></div>
+  <button class="btn primary" data-adl-start>Başla (6 soru)</button><button class="btn quiet" data-adl-later>Daha sonra hatırlat</button>`;
+ const i=a.i;return `<div class="row"><button class="btn quiet sm" data-adl-back style="padding-left:0">‹</button><span class="eyebrow">Soru ${i+1} / ${ADL_ITEMS.length}</span><span class="sp"></span><button class="btn quiet sm" data-adl-later>Daha sonra</button></div><div class="progress"><i style="width:${(i)/ADL_ITEMS.length*100}%"></i></div>
+  <div class="card"><div class="eyebrow">${ADL_ITEMS[i]}</div><h2 style="font-size:1.25em">Son bir ayda… [madde metni — lisans sonrası eklenecek]</h2><p class="small muted">Alan: ${ADL_ITEMS[i].toLowerCase()}</p></div>
+  <div class="likert-q">${LIKERT.map((l,v)=>`<button class="opt" aria-pressed="${a.ans[i]===v}" data-adl-ans="${v}"><span class="r"></span>${l}</button>`).join('')}</div>
+  ${a.assist?`<p class="small muted">Ayşe okuyup seçenekleri işaretleyebilir; yanıtlar Ahmet'in adına kaydedilir.</p>`:''}`};
+
+/* ---- BAKIM VEREN GÖRÜNÜMLERİ ---- */
+VIEWS['cg-home']=()=>{const p=state.cg.perms;const next=state.doses.find(d=>d.st==='bekliyor');const late=state.doses.filter(d=>d.st==='gecikti'||(d.st==='bekliyor'&&d.t<NOW-60));
+ return `<div style="margin-top:6px"><div class="eyebrow">Pazar, 25 Ekim</div><h1>Merhaba, ${state.caregiver.name}</h1><p class="muted">Ahmet'in paylaştığı bilgiler</p></div>
+ ${p.doses?`<div class="card"><div class="row"><h2>Bugün</h2><span class="sp"></span><span class="pill ${late.length?'late':'ok'}">${late.length?'1 gecikme':'planlandığı gibi'}</span></div>${state.doses.map(d=>`<div class="dose"><span class="t">${hhmm(d.t)}</span><div><b>Levodopa/Karbidopa</b><div class="d">${doseStatus(d)}</div></div></div>`).join('')}
+  ${next&&next.t<NOW?`<div class="notice warn">${I.info}<span>${hhmm(next.t)} dozu henüz kaydedilmedi. Ahmet almış ama kaydetmemiş olabilir; nazikçe sorabilirsiniz.</span></div><button class="btn" data-toast="Nazik hatırlatma gönderildi · Ahmet bildirimi görüp kendisi karar verir">Nazik hatırlatma gönder</button>`:''}
+ </div>`:`<div class="card soft"><p class="muted">Ahmet ilaç durumunu paylaşmıyor.</p></div>`}
+ ${p.adlAssist&&state.adl.assigned&&!state.adl.done?`<div class="card"><div class="row"><span class="ic" style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center">${I.clip}</span><div><b>Hekimden anket bekliyor</b><div class="small muted">6 soru · Ahmet "birlikte doldur" seçeneğini açarsa yardım edebilirsiniz</div></div></div><p class="small muted">Yanıtlar Ahmet'in kendi deneyimini yansıtmalı; siz okumaya ve işaretlemeye yardım edersiniz.</p></div>`:''}
+ ${p.motor?`<div class="card"><h3>Hareket özeti</h3><div class="hours">${state.today.map((v,h)=>`<i style="background:${h<=TODAY_H?motorColor(v):'var(--surface-2)'}"></i>`).join('')}</div><p class="small muted">Ahmet bu özeti sizinle paylaştı.</p></div>`:`<div class="card soft"><div class="row"><span style="color:var(--muted);width:24px">${I.lock}</span><div><b>Hareket verisi paylaşılmıyor</b><div class="small muted">Ahmet isterse Paylaşım bölümünden açabilir.</div></div></div></div>`}
+ <div class="card"><h3>Siz nasılsınız?</h3><p class="small muted">Bakım vermek yorucu olabilir. Bu alan Ahmet'le paylaşılmaz.</p><div class="row" style="gap:8px"><button class="btn" data-toast="Not alındı · yalnızca sizde kalır">İyiyim</button><button class="btn" data-toast="Not alındı · destek kaynakları bir sonraki sürümde">Zorlanıyorum</button></div></div>
+ <div class="notice">${I.info}<span>Bu uygulama acil durum izlemi yapmaz. Düşme, ciddi kötüleşme veya acil durumda 112'yi arayın.</span></div>`};
+VIEWS['cg-meds']=()=>state.cg.perms.doses?`<h1 style="margin-top:6px">Ahmet'in ilaçları</h1><div class="card">${MEDS.map(m=>`<div class="row" style="min-height:44px;flex-wrap:wrap"><b style="flex:1 1 100%">${m.n}</b>${m.times.map(t=>`<span class="chip num">${hhmm(t)}</span>`).join('')}</div>`).join('')}<p class="small muted">Yalnızca görüntüleme. Plan ${state.patient.doctor} tarafından yönetilir; Ahmet kayıtları kendisi girer, siz düzeltemezsiniz.</p></div>
+ <div class="card soft"><h3>Bu hafta</h3><div class="week" style="height:70px">${state.week.map((v,i)=>`<div><i style="height:${100-state.weekLate[i]*30}%;background:${state.weekLate[i]?'var(--warn)':'var(--good)'};opacity:.85"></i><span>${DAYS[i]}</span></div>`).join('')}</div><p class="small muted">Sarı günlerde geç alınan doz var. Bu bir puan değil; Ahmet'in randevusunda konuşulabilecek bir konu.</p></div>`:`<h1 style="margin-top:6px">İlaçlar</h1><div class="card soft"><p class="muted">Ahmet ilaç bilgilerini paylaşmıyor.</p></div>`;
+VIEWS['cg-notify']=()=>`<h1 style="margin-top:6px">Bildirimler</h1><div class="card"><div class="toggle"><div class="l">Doz 60 dakika gecikince<span>Yalnızca Ahmet izin verdiği için görünür</span></div><button class="sw" aria-checked="${state.cg.notify.missed60}" data-sw="cg.notify.missed60"></button></div><div class="toggle"><div class="l">Haftalık özet<span>Pazar akşamı</span></div><button class="sw" aria-checked="${state.cg.notify.weekly}" data-sw="cg.notify.weekly"></button></div><div class="toggle"><div class="l">Sessiz saatler<span>22:00–08:00</span></div><button class="sw" aria-checked="${state.cg.notify.quiet}" data-sw="cg.notify.quiet"></button></div></div>
+ <div class="notice">${I.info}<span>Alarm yorgunluğunu önlemek için günde en fazla 2 bildirim gönderilir. Hareket verisi için bildirim üretilmez.</span></div>
+ <div class="card soft"><h3>Son bildirimler</h3><div class="list"><div style="cursor:default"><div><b>Cuma 12:00 dozu 70 dk gecikti</b><div class="small muted">Cum 13:10 · Ahmet 13:12'de "geç aldım" kaydetti</div></div></div><div style="cursor:default"><div><b>Haftalık özet hazır</b><div class="small muted">Paz 19:00 (geçen hafta)</div></div></div></div></div>`;
+VIEWS['cg-perms']=()=>`<h1 style="margin-top:6px">İzinler</h1><p class="muted">Ahmet'in size verdiği erişim. Yalnızca Ahmet değiştirebilir.</p><div class="card">${Object.entries({doses:'Bugünün ilaç durumu',missed:'Gecikme bildirimi',adlAssist:'Anket yardımı',motor:'Hareket özeti',reports:'Hekim raporları',nonmotor:'Uyku ve yorgunluk notları'}).map(([k,l])=>`<div class="toggle"><div class="l">${l}</div><span class="pill ${state.cg.perms[k]?'ok':'wait'}">${state.cg.perms[k]?'Açık':'Kapalı'}</span></div>`).join('')}</div>
+ <button class="btn" data-toast="İstek Ahmet'e iletildi · kabul edip etmemek ona ait">Ek erişim iste</button><div class="card soft"><h3>Hesabım</h3><dl class="kv"><dt>Ad</dt><dd>${state.caregiver.name}</dd><dt>Yakınlık</dt><dd>${state.caregiver.rel}</dd><dt>Bağlı hasta</dt><dd>Ahmet (${state.patient.id})</dd></dl><button class="btn quiet" data-toast="Bağlantı kaldırıldı (demo)">Bağlantıyı kaldır</button></div>`;
+
+/* ---- alt sayfalar (sheet) ---- */
+const SHEETS={
+ consent:()=>`<h2>Aydınlatma metni (özet)</h2><p class="small">Bu uygulama, Parkinson hastalığı takibinizde hekiminize bilgi sağlamak amacıyla ilaç kayıtlarınızı, akıllı saatinizden gelen hareket ve uyku özetlerini ve kısa sorulara verdiğiniz yanıtları işler. Veriler Türkiye'de barındırılır, şifrelenir ve yalnızca sizin seçtiğiniz kişilerle paylaşılır. Verileriniz reklam, pazarlama veya ilaç şirketlerine satış amacıyla kullanılmaz. Rızanızı istediğiniz zaman geri çekebilir, verilerinizi indirebilir veya silebilirsiniz. Uygulama tanı koymaz, tedavi önermez ve acil durum izlemi yapmaz.</p><p class="small muted">KVKK m.10 kapsamındaki tam metin ve veri sorumlusu bilgileri gerçek üründe burada yer alır.</p><button class="btn primary" data-close>Kapat</button>`,
+ times:()=>`<h2>Hatırlatma saatlerini kaydır</h2><p class="small muted">Planı değil, bildirim saatini ayarlarsınız. Büyük kaymalar hekiminize bilgi olarak iletilir.</p>${SCHED.map(t=>`<div class="row" style="min-height:52px"><span class="num" style="width:60px">${hhmm(t)}</span><span class="sp"></span><button class="btn sm">−15 dk</button><button class="btn sm">+15 dk</button></div>`).join('')}<button class="btn primary" data-close>Kaydet</button>`,
+ invite:()=>`<h2>Bakım veren daveti</h2><p class="small muted">Bu kodu yakınınızla paylaşın. Kod 24 saat geçerlidir.</p><div class="code"><span>7</span><span>K</span><span>4</span><span>M</span><span>2</span><span>P</span></div><button class="btn primary" data-close>Tamam</button>`,
+ delete:()=>`<h2>Hesabı ve verileri sil</h2><p class="small">Tüm kayıtlarınız 30 gün içinde kalıcı olarak silinir; hekiminizle daha önce paylaştığınız raporlar klinik kayıtlarda kalabilir.</p><button class="btn" style="border-color:var(--serious);color:var(--serious)" data-toast="Silme talebi alındı (demo)" data-close>Silme talebini başlat</button><button class="btn quiet" data-close>Vazgeç</button>`,
+ nm:(k)=>`<h2>${k==='sleep'?'Dün gece uykunuz nasıldı?':'Bugün yorgunluk?'}</h2><div style="display:grid;gap:8px">${(k==='sleep'?['İyi dinlendim','Orta','Kötü, sık uyandım']:['Yok','Biraz','Belirgin']).map(a=>`<button class="opt" data-nm-set="${k}:${a}"><span class="r"></span>${a}</button>`).join('')}</div>`,
+ dose:(i)=>{const d=state.doses[i];return `<h2>${hhmm(d.t)} dozu</h2><p class="small muted">Suçlama yok; doğru kayıt hekiminizin size daha iyi yardım etmesini sağlar.</p><div style="display:grid;gap:8px"><button class="opt" data-dose="${i}:alindi"><span class="r"></span>Zamanında aldım</button><button class="opt" data-dose="${i}:gecikti"><span class="r"></span>Geç aldım (az önce)</button><button class="opt" data-dose="${i}:atlandi"><span class="r"></span>Almadım</button><button class="opt" data-dose="${i}:bekliyor"><span class="r"></span>Hatırlamıyorum / bekle</button></div>`}};
+
+/* ---- olaylar ---- */
+function setPath(path,val){const ks=path.split('.');let o=state;for(const k of ks.slice(0,-1))o=o[k];o[ks.at(-1)]=val}
+function getPath(path){return path.split('.').reduce((o,k)=>o[k],state)}
+document.addEventListener('click',e=>{
+ const t=e.target;const c=s=>t.closest(s);
+ if(c('[data-close]'))closeSheet();
+ if(c('[data-toast]')){toast(c('[data-toast]').dataset.toast)}
+ if(c('[data-next]')){state.step++;render()}
+ if(c('[data-finish]')){state.onboard=false;state.tab=state.role==='patient'?'home':'cg-home';render()}
+ if(c('[data-role-go]')){state.role=c('[data-role-go]').dataset.roleGo;state.step=0;$$('#roleSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.role===state.role));render()}
+ if(c('[data-connect]')){state.devices.aw.on=true;toast('Apple Watch bağlandı');render()}
+ if(c('[data-tab]')){go(c('[data-tab]').dataset.tab)}
+ if(c('[data-go]')){const v=c('[data-go]').dataset.go;if(v==='adl')state.adl.i=state.adl.i<0?-1:(state.adl.ans.length?state.adl.i:-1);go(v)}
+ if(c('[data-sw]')){const b=c('[data-sw]');const v=!getPath(b.dataset.sw);setPath(b.dataset.sw,v);b.setAttribute('aria-checked',v);if(b.dataset.sw.startsWith('settings')||b.dataset.sw==='share.doctor')render()}
+ if(c('[data-sheet]')){sheet(SHEETS[c('[data-sheet]').dataset.sheet]())}
+ if(c('[data-nm]')){sheet(SHEETS.nm(c('[data-nm]').dataset.nm))}
+ if(c('[data-nm-set]')){const [k,v]=c('[data-nm-set]').dataset.nmSet.split(':');state.nonmotor[k]=v;closeSheet();toast('Kaydedildi');render()}
+ if(c('[data-dose-sheet]')){sheet(SHEETS.dose(+c('[data-dose-sheet]').dataset.doseSheet))}
+ if(c('[data-dose]')){const [i,st]=c('[data-dose]').dataset.dose.split(':');const d=state.doses[+i];d.st=st;d.at=st==='alindi'?Math.min(NOW,d.t+4):st==='gecikti'?NOW:null;closeSheet();toast(st==='alindi'?'Kaydedildi, teşekkürler':st==='gecikti'?'Geç alındı olarak kaydedildi':st==='atlandi'?'Kaydedildi · hekiminiz bilgilendirilecek':'Beklemede');render()}
+ if(c('[data-ema]')){state.ema.pending=false;state.ema.answered.push(c('[data-ema]').dataset.ema);toast('Teşekkürler · yanıtınız kaydedildi');render()}
+ if(c('[data-ema-later]')){state.ema.pending=false;toast('2 saat sonra bir kez daha sorulacak');render()}
+ if(c('[data-adl-start]')){state.adl.i=0;render()}
+ if(c('[data-adl-later]')){state.adl.later=true;toast('Yarın sabah hatırlatılacak');go('home')}
+ if(c('[data-adl-back]')){state.adl.i=Math.max(-1,state.adl.i-1);render()}
+ if(c('[data-adl-ans]')){state.adl.ans[state.adl.i]=+c('[data-adl-ans]').dataset.adlAns;if(state.adl.i<ADL_ITEMS.length-1){state.adl.i++}else{state.adl.done=true}render()}
+ if(c('[data-fs]')){state.settings.fs=c('[data-fs]').dataset.fs;render()}
+ if(c('[data-maxn]')){state.settings.maxNotif=Math.max(0,Math.min(4,state.settings.maxNotif+(+c('[data-maxn]').dataset.maxn)));render()}
+ if(c('[data-cg-remove]')){state.cg.invited=false;toast('Bakım veren erişimi kaldırıldı');render()}
+});
+$('#roleSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.role=b.dataset.role;state.onboard=false;state.tab=state.role==='patient'?'home':'cg-home';$$('#roleSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+$('#restartBtn').onclick=()=>{state.onboard=true;state.step=0;render()};
+state.adl.i=-1;
+render();
+</script>
+</body>
+</html>
