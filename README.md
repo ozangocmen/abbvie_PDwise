@@ -8,8 +8,8 @@ PDwise, Parkinson hastalarının günlük deneyimlerini, ilaç kullanım bildiri
 
 | Arayüz | İçerik | Dosya |
 | --- | --- | --- |
-| **PDwise Care** | Hasta ve bakım veren deneyimi; ilaç kayıtları ve günlük sorular. | [Hasta uygulaması](<pdwise-care (1).html>) |
-| **PDwise Clinical** | Klinik ekip deneyimi; hasta özeti, zaman çizelgesi, veri eksikleri ve değerlendirme notları. | [Klinik panel](<PDwise Clinical(1).html>) |
+| **PDwise Care** | Hasta ve bakım veren deneyimi; ilaç kayıtları ve günlük sorular. | [Hasta uygulaması](<pdwise-care.html>) |
+| **PDwise Clinical** | Klinik ekip deneyimi; hasta özeti, zaman çizelgesi, veri eksikleri ve değerlendirme notları. | [Klinik panel](<PDwise Clinical.html>) |
 
 ## Nasıl açılır?
 
